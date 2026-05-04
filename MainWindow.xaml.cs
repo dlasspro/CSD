@@ -22,9 +22,18 @@ namespace CSD
 
     public sealed partial class MainWindow : Window
     {
-        private const string BaseUrl = "https://kv-service.wuyuan.dev";
         private const string TokenSettingsKey = "Token";
+        private const string ServerUrlKey = "Settings_ServerUrl";
         private readonly HttpClient _httpClient = new();
+
+        private string BaseUrl
+        {
+            get
+            {
+                var url = ApplicationData.Current.LocalSettings.Values[ServerUrlKey] as string;
+                return string.IsNullOrWhiteSpace(url) ? "https://kv-service.wuyuan.dev" : url;
+            }
+        }
 
         public MainWindow()
         {
@@ -35,6 +44,15 @@ namespace CSD
         private async void RefreshHomeworkButton_Click(object sender, RoutedEventArgs e)
         {
             await LoadTodayHomeworkAsync();
+        }
+
+        private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsWindow = new SettingsWindow(() =>
+            {
+                _ = LoadTodayHomeworkAsync();
+            });
+            settingsWindow.Activate();
         }
 
         private async Task LoadTodayHomeworkAsync()
@@ -127,12 +145,17 @@ namespace CSD
 
                 if (items.Count == 0) return;
 
+                // 从设置读取卡片大小参数
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                double minCardWidth = (double)(settings["Settings_MinCardWidth"] ?? 220.0);
+                double gap = (double)(settings["Settings_CardGap"] ?? 14.0);
+                double subjectFontSize = (double)(settings["Settings_SubjectFontSize"] ?? 22.0);
+                double contentFontSize = (double)(settings["Settings_ContentFontSize"] ?? 17.0);
+
                 // 计算响应式列数
                 double availableWidth = HomeworkContainer.ActualWidth;
                 if (availableWidth <= 0) availableWidth = 800;
 
-                double minCardWidth = 220;
-                double gap = 14;
                 int itemsPerRow = Math.Max(1, Math.Min(items.Count, (int)((availableWidth + gap) / (minCardWidth + gap))));
                 int rows = (int)Math.Ceiling((double)items.Count / itemsPerRow);
 
@@ -152,7 +175,7 @@ namespace CSD
                 {
                     int row = idx / itemsPerRow;
                     int col = idx % itemsPerRow;
-                    var card = CreateCard(items[idx]);
+                    var card = CreateCard(items[idx], subjectFontSize, contentFontSize);
                     Grid.SetRow(card, row);
                     Grid.SetColumn(card, col);
                     grid.Children.Add(card);
@@ -168,7 +191,7 @@ namespace CSD
             }
         }
 
-        private static Border CreateCard(HomeworkItem item)
+        private static Border CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize)
         {
             var border = new Border
             {
@@ -183,13 +206,13 @@ namespace CSD
             var stack = new StackPanel { Spacing = 10 };
             stack.Children.Add(new TextBlock
             {
-                FontSize = 22,
+                FontSize = subjectFontSize,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Text = item.Subject
             });
             stack.Children.Add(new TextBlock
             {
-                FontSize = 17,
+                FontSize = contentFontSize,
                 Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
                 Text = item.Content,
                 TextWrapping = TextWrapping.WrapWholeWords

@@ -25,6 +25,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <StackPanel Spacing="4">
@@ -42,6 +43,13 @@
                 VerticalAlignment="Center"
                 Click="RefreshHomeworkButton_Click"
                 Content="刷新" />
+
+            <Button
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                Click="OpenSettingsButton_Click"
+                Content="设置"
+                Margin="8,0,0,0" />
         </Grid>
 
         <TextBlock
