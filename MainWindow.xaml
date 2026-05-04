@@ -43,6 +43,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- 空作业按钮 -->
@@ -121,6 +122,15 @@
                     Content="随机抽取"
                     Margin="8,0,0,0" />
             </Grid>
+
+                <!-- 关于按钮 -->
+                <Button
+                    x:Name="AboutButton"
+                    Grid.Row="2"
+                    HorizontalAlignment="Center"
+                    Margin="0,8,0,0"
+                    Click="AboutButton_Click"
+                    Content="关于" />
             </Grid>
         </Grid>
 

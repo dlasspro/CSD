@@ -168,6 +168,12 @@ namespace CSD
             settingsWindow.Activate();
         }
 
+        private void AboutButton_Click(object sender, RoutedEventArgs e)
+        {
+            var aboutWindow = new AboutWindow();
+            aboutWindow.Activate();
+        }
+
         private async void PrevDateButton_Click(object sender, RoutedEventArgs e)
         {
             _currentDate = _currentDate.AddDays(-1);
