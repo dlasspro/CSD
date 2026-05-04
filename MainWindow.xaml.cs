@@ -31,6 +31,7 @@ namespace CSD
         private const string AutoRefreshIntervalKey = "Settings_AutoRefreshInterval";
         private const string CarouselIntervalKey = "Settings_CarouselInterval";
         private const string CarouselFontSizeKey = "Settings_CarouselFontSize";
+        private const string DebugModeKey = "Settings_DebugMode";
 
         private readonly HttpClient _httpClient = new();
         private DateTime _currentDate = DateTime.Now;
@@ -39,6 +40,7 @@ namespace CSD
         private List<HomeworkItem> _carouselItems = new();
         private int _carouselIndex = 0;
         private readonly DispatcherTimer _carouselTimer = new();
+        private DebugWindow? _debugWindow;
 
         // 当前作业的科目名称集合（用于判断未完成作业）
         private HashSet<string> _currentHomeworkSubjects = new();
@@ -155,6 +157,13 @@ namespace CSD
             {
                 RestartAutoRefreshTimer();
                 _ = LoadHomeworkAsync(_currentDate);
+
+                // 如果关闭了调试模式，关闭调试窗口
+                if (!DebugWindow.IsDebugModeEnabled() && _debugWindow != null)
+                {
+                    _debugWindow.Close();
+                    _debugWindow = null;
+                }
             });
             settingsWindow.Activate();
         }
@@ -217,6 +226,9 @@ namespace CSD
                 using var response = await _httpClient.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
+                // 调试日志
+                LogToDebugWindow(method.Method, path, (int)response.StatusCode, responseBody);
+
                 if (!response.IsSuccessStatusCode)
                 {
                     StatusText.Text = $"请求失败 ({(int)response.StatusCode})";
@@ -225,11 +237,31 @@ namespace CSD
 
                 return responseBody;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 StatusText.Text = "网络请求失败。";
+
+                // 调试日志（记录错误）
+                LogToDebugWindow(method.Method, path, 0, "", ex.Message);
+
                 return null;
             }
+        }
+
+        private void LogToDebugWindow(string method, string path, int statusCode, string responseBody, string? errorMessage = null)
+        {
+            if (!DebugWindow.IsDebugModeEnabled())
+                return;
+
+            // 确保调试窗口已创建
+            if (_debugWindow == null)
+            {
+                _debugWindow = new DebugWindow();
+                _debugWindow.Closed += (_, _) => _debugWindow = null;
+            }
+
+            _debugWindow.Activate();
+            _debugWindow.AppendLog(method, path, statusCode, responseBody, errorMessage);
         }
 
         private void ShowHomework(string json)
@@ -541,7 +573,7 @@ namespace CSD
             UndoneHomeworkPanel.Children.Clear();
 
             // 获取全部作业列表
-            var listResponse = await SendKvRequestAsync(HttpMethod.Get, "/kv/classworks-list-info");
+            var listResponse = await SendKvRequestAsync(HttpMethod.Get, "/kv/classworks-config-subject");
             if (string.IsNullOrWhiteSpace(listResponse))
             {
                 return;

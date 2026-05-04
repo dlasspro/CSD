@@ -22,6 +22,7 @@ namespace CSD
         private const string AutoRefreshIntervalKey = "Settings_AutoRefreshInterval";
         private const string CarouselIntervalKey = "Settings_CarouselInterval";
         private const string CarouselFontSizeKey = "Settings_CarouselFontSize";
+        private const string DebugModeKey = "Settings_DebugMode";
         private const string TokenKey = "Token";
 
         private readonly Action _onSettingsChanged;
@@ -35,6 +36,7 @@ namespace CSD
         private readonly NumberBox _autoRefreshIntervalBox;
         private readonly NumberBox _carouselIntervalBox;
         private readonly NumberBox _carouselFontSizeBox;
+        private readonly ToggleSwitch _debugModeToggle;
         private readonly TextBlock _currentTokenText;
 
         public SettingsWindow(Action onSettingsChanged)
@@ -81,6 +83,13 @@ namespace CSD
 
             _carouselFontSizeBox = CreateNumberBox("轮播字体大小", 16, 120, 4, 48);
             _carouselFontSizeBox.Value = (double)(settings[CarouselFontSizeKey] ?? 48.0);
+
+            // --- 调试模式 ---
+            _debugModeToggle = new ToggleSwitch
+            {
+                Header = "调试模式",
+                IsOn = settings.ContainsKey(DebugModeKey) && (bool)(settings[DebugModeKey] ?? false)
+            };
 
             // --- Token 状态 ---
             var hasToken = settings.ContainsKey(TokenKey) && !string.IsNullOrWhiteSpace(settings[TokenKey] as string);
@@ -145,6 +154,7 @@ namespace CSD
             form.Children.Add(_autoRefreshIntervalBox);
             form.Children.Add(_carouselIntervalBox);
             form.Children.Add(_carouselFontSizeBox);
+            form.Children.Add(_debugModeToggle);
             form.Children.Add(tokenSection);
             form.Children.Add(ioStack);
             form.Children.Add(saveButton);
@@ -186,6 +196,7 @@ namespace CSD
             settings[AutoRefreshIntervalKey] = _autoRefreshIntervalBox.Value;
             settings[CarouselIntervalKey] = _carouselIntervalBox.Value;
             settings[CarouselFontSizeKey] = _carouselFontSizeBox.Value;
+            settings[DebugModeKey] = _debugModeToggle.IsOn;
 
             // 保存成功提示
             _onSettingsChanged?.Invoke();
@@ -257,6 +268,7 @@ namespace CSD
                     _autoRefreshIntervalBox.Value = (double)(settings[AutoRefreshIntervalKey] ?? 60.0);
                     _carouselIntervalBox.Value = (double)(settings[CarouselIntervalKey] ?? 5.0);
                     _carouselFontSizeBox.Value = (double)(settings[CarouselFontSizeKey] ?? 48.0);
+                    _debugModeToggle.IsOn = settings.ContainsKey(DebugModeKey) && (bool)(settings[DebugModeKey] ?? false);
                     _currentTokenText.Text = settings.ContainsKey(TokenKey) ? "已设置" : "未设置";
                 }
                 catch (Exception ex)
