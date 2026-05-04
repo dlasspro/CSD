@@ -13,7 +13,90 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid>
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="180" />
+        </Grid.RowDefinitions>
 
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Spacing="4">
+                <TextBlock
+                    FontSize="32"
+                    FontWeight="SemiBold"
+                    Text="今日作业" />
+                <TextBlock
+                    x:Name="TodayKeyText"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+
+            <Button
+                Grid.Column="1"
+                VerticalAlignment="Center"
+                Click="RefreshHomeworkButton_Click"
+                Content="刷新" />
+        </Grid>
+
+        <TextBlock
+            x:Name="StatusText"
+            Grid.Row="1"
+            Margin="0,18,0,0"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="正在加载今日作业..." />
+
+        <ScrollViewer Grid.Row="2" Margin="0,18,0,16">
+            <ItemsControl x:Name="HomeworkItemsControl">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Left"
+                            MaximumRowsOrColumns="4" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:HomeworkItem">
+                        <Border
+                            MinWidth="220"
+                            MaxWidth="420"
+                            Margin="0,0,14,14"
+                            Padding="22"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="18">
+                            <StackPanel Spacing="10">
+                                <TextBlock
+                                    FontSize="22"
+                                    FontWeight="SemiBold"
+                                    Text="{x:Bind Subject}" />
+                                <TextBlock
+                                    FontSize="17"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="{x:Bind Content}"
+                                    TextWrapping="WrapWholeWords" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <TextBox
+            x:Name="ResultBox"
+            Grid.Row="3"
+            AcceptsReturn="True"
+            Header="原始结果"
+            IsReadOnly="True"
+            TextWrapping="Wrap" />
     </Grid>
 </Window>

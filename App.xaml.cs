@@ -15,6 +15,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -26,6 +27,7 @@ namespace CSD
     /// </summary>
     public partial class App : Application
     {
+        private const string TokenSettingsKey = "Token";
         private Window? _window;
 
         /// <summary>
@@ -43,7 +45,8 @@ namespace CSD
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            _window = new MainWindow();
+            var savedToken = ApplicationData.Current.LocalSettings.Values[TokenSettingsKey] as string;
+            _window = string.IsNullOrWhiteSpace(savedToken) ? new InitializationWindow() : new MainWindow();
             _window.Activate();
         }
     }
