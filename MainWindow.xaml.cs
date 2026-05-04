@@ -168,6 +168,11 @@ namespace CSD
             settingsWindow.Activate();
         }
 
+        private void TutorialButton_Click(object sender, RoutedEventArgs e)
+        {
+            _ = Windows.System.Launcher.LaunchUriAsync(new Uri("https://520.re/csh"));
+        }
+
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
             var aboutWindow = new AboutWindow();
@@ -290,10 +295,14 @@ namespace CSD
                         ? contentElement.GetString()
                         : subject.Value.ToString();
 
+                    // 内容为空时不显示为卡片
+                    if (string.IsNullOrWhiteSpace(content))
+                        continue;
+
                     items.Add(new HomeworkItem
                     {
                         Subject = subject.Name,
-                        Content = string.IsNullOrWhiteSpace(content) ? "暂无内容" : content
+                        Content = content
                     });
                     _currentHomeworkSubjects.Add(subject.Name);
                 }

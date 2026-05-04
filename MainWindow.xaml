@@ -51,6 +51,7 @@
                     x:Name="UndoneHomeworkPanel"
                     Grid.Row="0"
                     Orientation="Horizontal"
+                    HorizontalAlignment="Center"
                     Margin="0,0,0,8"
                     Spacing="8" />
 
@@ -61,7 +62,6 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
@@ -101,36 +101,40 @@
                     Margin="0,0,8,0" />
 
                 <Button
-                    Grid.Column="5"
-                    VerticalAlignment="Center"
-                    Click="OpenSettingsButton_Click"
-                    Content="设置"
-                    Margin="0,0,8,0" />
-
-                <Button
                     x:Name="ToggleCarouselButton"
-                    Grid.Column="6"
+                    Grid.Column="5"
                     VerticalAlignment="Center"
                     Click="ToggleCarouselButton_Click"
                     Content="轮播" />
 
                 <Button
                     x:Name="PickRandomStudentButton"
-                    Grid.Column="7"
+                    Grid.Column="6"
                     VerticalAlignment="Center"
                     Click="PickRandomStudentButton_Click"
                     Content="随机抽取"
                     Margin="8,0,0,0" />
             </Grid>
 
-                <!-- 关于按钮 -->
-                <Button
-                    x:Name="AboutButton"
+                <!-- 底部按钮：教程、关于、设置 -->
+                <StackPanel
                     Grid.Row="2"
+                    Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Margin="0,8,0,0"
-                    Click="AboutButton_Click"
-                    Content="关于" />
+                    Spacing="12">
+                    <Button
+                        x:Name="TutorialButton"
+                        Click="TutorialButton_Click"
+                        Content="教程" />
+                    <Button
+                        x:Name="AboutButton"
+                        Click="AboutButton_Click"
+                        Content="关于" />
+                    <Button
+                        Click="OpenSettingsButton_Click"
+                        Content="设置" />
+                </StackPanel>
             </Grid>
         </Grid>
 
