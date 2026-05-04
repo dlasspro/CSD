@@ -57,8 +57,7 @@
                     <ItemsPanelTemplate>
                         <ItemsWrapGrid
                             Orientation="Horizontal"
-                            HorizontalAlignment="Left"
-                            MaximumRowsOrColumns="4" />
+                            HorizontalAlignment="Left" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
