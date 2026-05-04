@@ -58,6 +58,13 @@ namespace CSD
         {
             InitializeComponent();
 
+            // 设置窗口标题栏图标
+            try
+            {
+                AppWindow.SetIcon("Assets/StoreLogo.png");
+            }
+            catch { }
+
             RestoreWindowState();
 
             // 关闭时保存窗口状态

@@ -32,7 +32,7 @@ namespace CSD
             // 副标题
             stack.Children.Add(new TextBlock
             {
-                Text = "Classworks Student Dashboard",
+                Text = "Classworks Desktop",
                 FontSize = 16,
                 Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
                 HorizontalAlignment = HorizontalAlignment.Center,
@@ -50,7 +50,7 @@ namespace CSD
             // 描述
             stack.Children.Add(new TextBlock
             {
-                Text = "Classworks 学生仪表板是一款桌面应用程序，用于查看和管理每日作业、记录考勤信息，并提供轮播展示和随机抽取学生等辅助功能。",
+                Text = "Classworks Desktop是一款桌面应用程序，是Classworks桌面客户端。",
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 14,
                 Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
@@ -60,15 +60,13 @@ namespace CSD
             var features = new StackPanel { Spacing = 8, Margin = new Thickness(0, 4, 0, 0) };
             features.Children.Add(new TextBlock
             {
-                Text = "主要功能",
+                Text = "致谢：",
                 FontSize = 16,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
-            features.Children.Add(CreateFeatureItem("作业管理", "查看、添加、修改每日作业"));
-            features.Children.Add(CreateFeatureItem("考勤记录", "记录学生出勤情况"));
-            features.Children.Add(CreateFeatureItem("轮播展示", "全屏轮播展示作业内容"));
-            features.Children.Add(CreateFeatureItem("随机抽取", "随机抽取学生姓名"));
-            features.Children.Add(CreateFeatureItem("空作业提醒", "在导航栏显示未布置的作业科目"));
+            features.Children.Add(CreateFeatureItem("翟十光", "客户端开发者"));
+            features.Children.Add(CreateFeatureItem("Saskia", "为翟十光提供了好用的开发环境和Token"));
+            features.Children.Add(CreateFeatureItem("孙悟元", "Classworks开发者"));
             stack.Children.Add(features);
 
             // 分隔线
