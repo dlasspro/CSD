@@ -67,6 +67,8 @@ namespace CSD
             features.Children.Add(CreateFeatureItem("翟十光", "客户端开发者"));
             features.Children.Add(CreateFeatureItem("Saskia", "为翟十光提供了好用的开发环境和Token"));
             features.Children.Add(CreateFeatureItem("孙悟元", "Classworks开发者"));
+            features.Children.Add(CreateFeatureItem("GitHub", "https://github.com/dlasspro/CSD"));
+            features.Children.Add(CreateFeatureItem("Website", "https://cs.dy.ci"));
             stack.Children.Add(features);
 
             // 分隔线
