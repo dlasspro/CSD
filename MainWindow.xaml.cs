@@ -1,5 +1,7 @@
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
@@ -9,6 +11,7 @@ using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Windows.Graphics;
 using Windows.Storage;
 
 namespace CSD
@@ -16,7 +19,6 @@ namespace CSD
     public sealed class HomeworkItem
     {
         public string Subject { get; set; } = string.Empty;
-
         public string Content { get; set; } = string.Empty;
     }
 
@@ -24,7 +26,18 @@ namespace CSD
     {
         private const string TokenSettingsKey = "Token";
         private const string ServerUrlKey = "Settings_ServerUrl";
+        private const string AutoRefreshEnabledKey = "Settings_AutoRefreshEnabled";
+        private const string AutoRefreshIntervalKey = "Settings_AutoRefreshInterval";
+        private const string CarouselIntervalKey = "Settings_CarouselInterval";
+        private const string CarouselFontSizeKey = "Settings_CarouselFontSize";
+
         private readonly HttpClient _httpClient = new();
+        private DateTime _currentDate = DateTime.Now;
+        private string? _rawJson;
+        private readonly DispatcherTimer _autoRefreshTimer = new();
+        private List<HomeworkItem> _carouselItems = new();
+        private int _carouselIndex = 0;
+        private readonly DispatcherTimer _carouselTimer = new();
 
         private string BaseUrl
         {
@@ -38,36 +51,133 @@ namespace CSD
         public MainWindow()
         {
             InitializeComponent();
-            _ = LoadTodayHomeworkAsync();
+
+            RestoreWindowState();
+            Closed += (sender, args) => SaveWindowState();
+
+            _autoRefreshTimer.Tick += AutoRefreshTimer_Tick;
+            RestartAutoRefreshTimer();
+
+            _ = LoadHomeworkAsync(_currentDate);
+        }
+
+        private void RestoreWindowState()
+        {
+            try
+            {
+                var settings = ApplicationData.Current.LocalSettings.Values;
+
+                if (settings.ContainsKey("MainWindow_Width") && settings.ContainsKey("MainWindow_Height"))
+                {
+                    int width = Math.Max(400, (int)(double)settings["MainWindow_Width"]);
+                    int height = Math.Max(300, (int)(double)settings["MainWindow_Height"]);
+                    this.AppWindow.Resize(new SizeInt32(width, height));
+                }
+
+                if (settings.ContainsKey("MainWindow_X") && settings.ContainsKey("MainWindow_Y"))
+                {
+                    int x = (int)(double)settings["MainWindow_X"];
+                    int y = (int)(double)settings["MainWindow_Y"];
+                    this.AppWindow.Move(new PointInt32(x, y));
+                }
+
+                if (settings.ContainsKey("MainWindow_State"))
+                {
+                    string? state = settings["MainWindow_State"] as string;
+                    if (state == "Maximized" && this.AppWindow.Presenter is OverlappedPresenter presenter)
+                    {
+                        presenter.Maximize();
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void SaveWindowState()
+        {
+            try
+            {
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                settings["MainWindow_X"] = (double)this.AppWindow.Position.X;
+                settings["MainWindow_Y"] = (double)this.AppWindow.Position.Y;
+                settings["MainWindow_Width"] = (double)this.AppWindow.Size.Width;
+                settings["MainWindow_Height"] = (double)this.AppWindow.Size.Height;
+
+                if (this.AppWindow.Presenter is OverlappedPresenter presenter)
+                {
+                    settings["MainWindow_State"] = presenter.State.ToString();
+                }
+            }
+            catch { }
+        }
+
+        private void RestartAutoRefreshTimer()
+        {
+            _autoRefreshTimer.Stop();
+
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            bool enabled = settings.ContainsKey(AutoRefreshEnabledKey)
+                ? (bool)(settings[AutoRefreshEnabledKey] ?? false)
+                : false;
+
+            if (enabled)
+            {
+                double intervalSeconds = (double)(settings[AutoRefreshIntervalKey] ?? 60.0);
+                _autoRefreshTimer.Interval = TimeSpan.FromSeconds(intervalSeconds);
+                _autoRefreshTimer.Start();
+            }
+        }
+
+        private void AutoRefreshTimer_Tick(object? sender, object e)
+        {
+            _ = LoadHomeworkAsync(_currentDate);
         }
 
         private async void RefreshHomeworkButton_Click(object sender, RoutedEventArgs e)
         {
-            await LoadTodayHomeworkAsync();
+            await LoadHomeworkAsync(_currentDate);
         }
 
         private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
         {
             var settingsWindow = new SettingsWindow(() =>
             {
-                _ = LoadTodayHomeworkAsync();
+                RestartAutoRefreshTimer();
+                _ = LoadHomeworkAsync(_currentDate);
             });
             settingsWindow.Activate();
         }
 
-        private async Task LoadTodayHomeworkAsync()
+        private async void PrevDateButton_Click(object sender, RoutedEventArgs e)
         {
-            var todayKey = $"classworks-data-{DateTime.Now:yyyyMMdd}";
-            TodayKeyText.Text = todayKey;
-            StatusText.Text = "正在加载今日作业...";
+            _currentDate = _currentDate.AddDays(-1);
+            await LoadHomeworkAsync(_currentDate);
+        }
+
+        private async void NextDateButton_Click(object sender, RoutedEventArgs e)
+        {
+            _currentDate = _currentDate.AddDays(1);
+            await LoadHomeworkAsync(_currentDate);
+        }
+
+        private async Task LoadHomeworkAsync(DateTime date)
+        {
+            var dateKey = $"classworks-data-{date:yyyyMMdd}";
+            TodayKeyText.Text = dateKey;
+
+            bool isToday = date.Date == DateTime.Now.Date;
+            StatusText.Text = isToday
+                ? "正在加载今日作业..."
+                : $"正在加载 {date:yyyy-MM-dd} 的作业...";
             HomeworkContainer.Children.Clear();
 
-            var responseBody = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{Uri.EscapeDataString(todayKey)}");
+            var responseBody = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{Uri.EscapeDataString(dateKey)}");
             if (string.IsNullOrWhiteSpace(responseBody))
             {
                 return;
             }
 
+            _rawJson = responseBody;
             ShowHomework(responseBody);
         }
 
@@ -77,7 +187,6 @@ namespace CSD
             if (string.IsNullOrWhiteSpace(token))
             {
                 StatusText.Text = "本地没有 Token，请先完成初始化。";
-                ResultBox.Text = StatusText.Text;
                 return null;
             }
 
@@ -91,25 +200,20 @@ namespace CSD
                     request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 }
 
-                ResultBox.Text = "请求中...";
-
                 using var response = await _httpClient.SendAsync(request);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
-                ResultBox.Text = $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}\r\n\r\n{responseBody}";
-
                 if (!response.IsSuccessStatusCode)
                 {
-                    StatusText.Text = "获取今日作业失败。";
+                    StatusText.Text = $"请求失败 ({(int)response.StatusCode})";
                     return null;
                 }
 
                 return responseBody;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                StatusText.Text = "获取今日作业失败。";
-                ResultBox.Text = ex.Message;
+                StatusText.Text = "网络请求失败。";
                 return null;
             }
         }
@@ -121,7 +225,7 @@ namespace CSD
                 using var document = JsonDocument.Parse(json);
                 if (!document.RootElement.TryGetProperty("homework", out var homework) || homework.ValueKind != JsonValueKind.Object)
                 {
-                    StatusText.Text = "今日暂无作业。";
+                    StatusText.Text = "暂无作业。";
                     HomeworkContainer.Children.Clear();
                     return;
                 }
@@ -141,7 +245,12 @@ namespace CSD
                 }
 
                 HomeworkContainer.Children.Clear();
-                StatusText.Text = items.Count == 0 ? "今日暂无作业。" : $"共 {items.Count} 项作业";
+                StatusText.Text = items.Count == 0 ? "暂无作业。" : $"共 {items.Count} 项作业";
+
+                // 更新轮播数据，退出轮播模式
+                _carouselItems = items;
+                _carouselTimer.Stop();
+                CarouselOverlay.Visibility = Visibility.Collapsed;
 
                 if (items.Count == 0) return;
 
@@ -183,25 +292,26 @@ namespace CSD
 
                 HomeworkContainer.Children.Add(grid);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 StatusText.Text = "作业数据格式错误。";
                 HomeworkContainer.Children.Clear();
-                ResultBox.Text += $"\r\n\r\nJSON 解析失败：{ex.Message}";
             }
         }
 
-        private static Border CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize)
+        private Border CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize)
         {
             var border = new Border
             {
                 Padding = new Thickness(22),
                 Background = (Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"],
                 CornerRadius = new CornerRadius(10),
-                Translation = new Vector3(0, 0, 16)
+                Translation = new Vector3(0, 0, 16),
+                Tag = item.Subject
             };
 
             border.Shadow = new ThemeShadow();
+            border.Tapped += Card_Tapped;
 
             var stack = new StackPanel { Spacing = 10 };
             stack.Children.Add(new TextBlock
@@ -220,6 +330,192 @@ namespace CSD
 
             border.Child = stack;
             return border;
+        }
+
+        private async void Card_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (sender is not Border border || border.Tag is not string subject)
+                return;
+
+            if (border.Child is not StackPanel stack || stack.Children.Count < 2 || stack.Children[1] is not TextBlock contentBlock)
+                return;
+
+            var editBox = new TextBox
+            {
+                Text = contentBlock.Text,
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                Height = 300,
+                PlaceholderText = "修改作业内容..."
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = $"修改 {subject} 作业",
+                Content = editBox,
+                PrimaryButtonText = "保存",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = border.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                await SaveHomeworkAsync(subject, editBox.Text);
+            }
+        }
+
+        private async Task SaveHomeworkAsync(string subject, string newContent)
+        {
+            if (string.IsNullOrWhiteSpace(_rawJson))
+                return;
+
+            try
+            {
+                using var document = JsonDocument.Parse(_rawJson);
+                var root = new Dictionary<string, JsonElement>();
+                foreach (var prop in document.RootElement.EnumerateObject())
+                    root[prop.Name] = prop.Value;
+
+                // 构建新的 homework 对象
+                var homeworkDict = new Dictionary<string, object>();
+                if (document.RootElement.TryGetProperty("homework", out var homeworkElement) && homeworkElement.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var subj in homeworkElement.EnumerateObject())
+                    {
+                        if (subj.Name == subject)
+                        {
+                            homeworkDict[subj.Name] = new Dictionary<string, object> { ["content"] = newContent };
+                        }
+                        else
+                        {
+                            if (subj.Value.ValueKind == JsonValueKind.Object)
+                            {
+                                var inner = new Dictionary<string, object>();
+                                foreach (var p in subj.Value.EnumerateObject())
+                                {
+                                    inner[p.Name] = p.Value.ValueKind == JsonValueKind.String
+                                        ? p.Value.GetString()!
+                                        : p.Value.GetRawText();
+                                }
+                                homeworkDict[subj.Name] = inner;
+                            }
+                            else
+                            {
+                                homeworkDict[subj.Name] = subj.Value.GetRawText();
+                            }
+                        }
+                    }
+                }
+
+                // 构建 attendance 对象
+                var attendanceDict = new Dictionary<string, object>();
+                if (document.RootElement.TryGetProperty("attendance", out var attendanceElement) && attendanceElement.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var att in attendanceElement.EnumerateObject())
+                    {
+                        if (att.Value.ValueKind == JsonValueKind.Array)
+                        {
+                            var list = new List<string>();
+                            foreach (var item in att.Value.EnumerateArray())
+                                list.Add(item.GetString() ?? "");
+                            attendanceDict[att.Name] = list;
+                        }
+                        else
+                        {
+                            attendanceDict[att.Name] = att.Value.GetRawText();
+                        }
+                    }
+                }
+
+                var payload = new Dictionary<string, object>
+                {
+                    ["homework"] = homeworkDict,
+                    ["attendance"] = attendanceDict
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                var dateKey = $"classworks-data-{_currentDate:yyyyMMdd}";
+                var response = await SendKvRequestAsync(HttpMethod.Post, $"/kv/{Uri.EscapeDataString(dateKey)}", json);
+
+                if (response != null)
+                {
+                    _rawJson = json;
+                    await LoadHomeworkAsync(_currentDate);
+                }
+            }
+            catch (Exception)
+            {
+                StatusText.Text = "保存作业失败。";
+            }
+        }
+
+        // ========== 轮播功能 ==========
+
+        private void ToggleCarouselButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_carouselItems.Count == 0)
+            {
+                StatusText.Text = "暂无作业可供轮播。";
+                return;
+            }
+
+            _carouselIndex = 0;
+            ShowCarouselItem();
+            StartCarouselTimer();
+            CarouselOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void ExitCarouselButton_Click(object sender, RoutedEventArgs e)
+        {
+            _carouselTimer.Stop();
+            CarouselOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void CarouselOverlay_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            // 点击内容切换到下一项
+            if (_carouselItems.Count > 0)
+            {
+                _carouselIndex = (_carouselIndex + 1) % _carouselItems.Count;
+                ShowCarouselItem();
+            }
+        }
+
+        private void StartCarouselTimer()
+        {
+            _carouselTimer.Stop();
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            double interval = (double)(settings[CarouselIntervalKey] ?? 5.0);
+            _carouselTimer.Interval = TimeSpan.FromSeconds(interval);
+            _carouselTimer.Tick -= CarouselTimer_Tick;
+            _carouselTimer.Tick += CarouselTimer_Tick;
+            _carouselTimer.Start();
+        }
+
+        private void CarouselTimer_Tick(object? sender, object e)
+        {
+            if (_carouselItems.Count > 0)
+            {
+                _carouselIndex = (_carouselIndex + 1) % _carouselItems.Count;
+                ShowCarouselItem();
+            }
+        }
+
+        private void ShowCarouselItem()
+        {
+            if (_carouselItems.Count == 0) return;
+
+            var item = _carouselItems[_carouselIndex];
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            double carouselFontSize = (double)(settings[CarouselFontSizeKey] ?? 48.0);
+
+            CarouselSubjectText.Text = item.Subject;
+            CarouselSubjectText.FontSize = Math.Min(carouselFontSize * 1.3, 96);
+            CarouselContentText.Text = item.Content;
+            CarouselContentText.FontSize = carouselFontSize;
+            CarouselProgressText.Text = $"{_carouselIndex + 1} / {_carouselItems.Count}";
         }
     }
 }

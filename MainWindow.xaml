@@ -13,66 +13,144 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Padding="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="180" />
-        </Grid.RowDefinitions>
+    <Grid>
+        <!-- 主内容 -->
+        <Grid Padding="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+            <!-- Header: 日期导航 + 操作按钮 -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-            <StackPanel Spacing="4">
-                <TextBlock
-                    FontSize="32"
-                    FontWeight="SemiBold"
-                    Text="今日作业" />
-                <TextBlock
-                    x:Name="TodayKeyText"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            </StackPanel>
+                <Button
+                    x:Name="PrevDateButton"
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Click="PrevDateButton_Click"
+                    Content="◀"
+                    Margin="0,0,8,0" />
 
-            <Button
-                Grid.Column="1"
-                VerticalAlignment="Center"
-                Click="RefreshHomeworkButton_Click"
-                Content="刷新" />
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock
+                        FontSize="32"
+                        FontWeight="SemiBold"
+                        Text="作业" />
+                    <TextBlock
+                        x:Name="TodayKeyText"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
 
-            <Button
-                Grid.Column="2"
-                VerticalAlignment="Center"
-                Click="OpenSettingsButton_Click"
-                Content="设置"
-                Margin="8,0,0,0" />
+                <Button
+                    x:Name="NextDateButton"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Click="NextDateButton_Click"
+                    Content="▶"
+                    Margin="8,0,0,0" />
+
+                <Button
+                    Grid.Column="4"
+                    VerticalAlignment="Center"
+                    Click="RefreshHomeworkButton_Click"
+                    Content="刷新"
+                    Margin="0,0,8,0" />
+
+                <Button
+                    Grid.Column="5"
+                    VerticalAlignment="Center"
+                    Click="OpenSettingsButton_Click"
+                    Content="设置"
+                    Margin="0,0,8,0" />
+
+                <Button
+                    x:Name="ToggleCarouselButton"
+                    Grid.Column="6"
+                    VerticalAlignment="Center"
+                    Click="ToggleCarouselButton_Click"
+                    Content="轮播" />
+            </Grid>
+
+            <TextBlock
+                x:Name="StatusText"
+                Grid.Row="1"
+                Margin="0,18,0,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="正在加载今日作业..." />
+
+            <ScrollViewer
+                Grid.Row="2"
+                Margin="0,18,0,16"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="HomeworkContainer" Spacing="14" />
+            </ScrollViewer>
         </Grid>
 
-        <TextBlock
-            x:Name="StatusText"
-            Grid.Row="1"
-            Margin="0,18,0,0"
-            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-            Text="正在加载今日作业..." />
+        <!-- 轮播覆盖层 -->
+        <Grid
+            x:Name="CarouselOverlay"
+            Visibility="Collapsed"
+            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+            Tapped="CarouselOverlay_Tapped">
 
-        <ScrollViewer
-            Grid.Row="2"
-            Margin="0,18,0,16"
-            VerticalScrollBarVisibility="Auto"
-            HorizontalScrollBarVisibility="Disabled">
-            <StackPanel x:Name="HomeworkContainer" Spacing="14" />
-        </ScrollViewer>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <TextBox
-            x:Name="ResultBox"
-            Grid.Row="3"
-            AcceptsReturn="True"
-            Header="原始结果"
-            IsReadOnly="True"
-            TextWrapping="Wrap" />
+            <!-- 顶部退出按钮 -->
+            <Button
+                x:Name="ExitCarouselButton"
+                Grid.Row="0"
+                Content="✕ 退出轮播"
+                HorizontalAlignment="Right"
+                Margin="0,16,16,0"
+                Click="ExitCarouselButton_Click" />
+
+            <!-- 轮播内容 -->
+            <ScrollViewer
+                Grid.Row="1"
+                VerticalAlignment="Center"
+                HorizontalContentAlignment="Center"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+                <StackPanel
+                    x:Name="CarouselContentPanel"
+                    Spacing="32"
+                    Padding="48">
+                    <TextBlock
+                        x:Name="CarouselSubjectText"
+                        TextWrapping="WrapWholeWords"
+                        TextAlignment="Center"
+                        FontWeight="SemiBold" />
+                    <TextBlock
+                        x:Name="CarouselContentText"
+                        TextWrapping="WrapWholeWords"
+                        TextAlignment="Center" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 底部进度 -->
+            <TextBlock
+                x:Name="CarouselProgressText"
+                Grid.Row="2"
+                TextAlignment="Center"
+                Margin="0,0,0,24"
+                FontSize="16"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Grid>
     </Grid>
 </Window>

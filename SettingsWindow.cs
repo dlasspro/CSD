@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,10 @@ namespace CSD
         private const string SubjectFontSizeKey = "Settings_SubjectFontSize";
         private const string ContentFontSizeKey = "Settings_ContentFontSize";
         private const string ServerUrlKey = "Settings_ServerUrl";
+        private const string AutoRefreshEnabledKey = "Settings_AutoRefreshEnabled";
+        private const string AutoRefreshIntervalKey = "Settings_AutoRefreshInterval";
+        private const string CarouselIntervalKey = "Settings_CarouselInterval";
+        private const string CarouselFontSizeKey = "Settings_CarouselFontSize";
         private const string TokenKey = "Token";
 
         private readonly Action _onSettingsChanged;
@@ -26,6 +31,10 @@ namespace CSD
         private readonly NumberBox _subjectFontSizeBox;
         private readonly NumberBox _contentFontSizeBox;
         private readonly TextBox _serverUrlBox;
+        private readonly ToggleSwitch _autoRefreshToggle;
+        private readonly NumberBox _autoRefreshIntervalBox;
+        private readonly NumberBox _carouselIntervalBox;
+        private readonly NumberBox _carouselFontSizeBox;
         private readonly TextBlock _currentTokenText;
 
         public SettingsWindow(Action onSettingsChanged)
@@ -33,6 +42,7 @@ namespace CSD
             _onSettingsChanged = onSettingsChanged;
 
             Title = "设置";
+            SystemBackdrop = new MicaBackdrop();
             var settings = ApplicationData.Current.LocalSettings.Values;
 
             // --- 卡片大小 ---
@@ -54,6 +64,23 @@ namespace CSD
                 PlaceholderText = "https://kv-service.wuyuan.dev",
                 Text = settings[ServerUrlKey] as string ?? "https://kv-service.wuyuan.dev"
             };
+
+            // --- 定时刷新 ---
+            _autoRefreshToggle = new ToggleSwitch
+            {
+                Header = "定时刷新",
+                IsOn = settings.ContainsKey(AutoRefreshEnabledKey) ? (bool)(settings[AutoRefreshEnabledKey] ?? false) : false
+            };
+
+            _autoRefreshIntervalBox = CreateNumberBox("刷新间隔（秒）", 10, 600, 10, 60);
+            _autoRefreshIntervalBox.Value = (double)(settings[AutoRefreshIntervalKey] ?? 60.0);
+
+            // --- 轮播设置 ---
+            _carouselIntervalBox = CreateNumberBox("轮播切换间隔（秒）", 1, 120, 1, 5);
+            _carouselIntervalBox.Value = (double)(settings[CarouselIntervalKey] ?? 5.0);
+
+            _carouselFontSizeBox = CreateNumberBox("轮播字体大小", 16, 120, 4, 48);
+            _carouselFontSizeBox.Value = (double)(settings[CarouselFontSizeKey] ?? 48.0);
 
             // --- Token 状态 ---
             var hasToken = settings.ContainsKey(TokenKey) && !string.IsNullOrWhiteSpace(settings[TokenKey] as string);
@@ -114,6 +141,10 @@ namespace CSD
             form.Children.Add(_subjectFontSizeBox);
             form.Children.Add(_contentFontSizeBox);
             form.Children.Add(_serverUrlBox);
+            form.Children.Add(_autoRefreshToggle);
+            form.Children.Add(_autoRefreshIntervalBox);
+            form.Children.Add(_carouselIntervalBox);
+            form.Children.Add(_carouselFontSizeBox);
             form.Children.Add(tokenSection);
             form.Children.Add(ioStack);
             form.Children.Add(saveButton);
@@ -151,6 +182,10 @@ namespace CSD
             settings[SubjectFontSizeKey] = _subjectFontSizeBox.Value;
             settings[ContentFontSizeKey] = _contentFontSizeBox.Value;
             settings[ServerUrlKey] = _serverUrlBox.Text;
+            settings[AutoRefreshEnabledKey] = _autoRefreshToggle.IsOn;
+            settings[AutoRefreshIntervalKey] = _autoRefreshIntervalBox.Value;
+            settings[CarouselIntervalKey] = _carouselIntervalBox.Value;
+            settings[CarouselFontSizeKey] = _carouselFontSizeBox.Value;
             _onSettingsChanged?.Invoke();
             Close();
         }
@@ -216,6 +251,10 @@ namespace CSD
                     _subjectFontSizeBox.Value = (double)(settings[SubjectFontSizeKey] ?? 22.0);
                     _contentFontSizeBox.Value = (double)(settings[ContentFontSizeKey] ?? 17.0);
                     _serverUrlBox.Text = settings[ServerUrlKey] as string ?? "https://kv-service.wuyuan.dev";
+                    _autoRefreshToggle.IsOn = settings.ContainsKey(AutoRefreshEnabledKey) ? (bool)(settings[AutoRefreshEnabledKey] ?? false) : false;
+                    _autoRefreshIntervalBox.Value = (double)(settings[AutoRefreshIntervalKey] ?? 60.0);
+                    _carouselIntervalBox.Value = (double)(settings[CarouselIntervalKey] ?? 5.0);
+                    _carouselFontSizeBox.Value = (double)(settings[CarouselFontSizeKey] ?? 48.0);
                     _currentTokenText.Text = settings.ContainsKey(TokenKey) ? "已设置" : "未设置";
                 }
                 catch (Exception ex)
