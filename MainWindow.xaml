@@ -51,7 +51,7 @@
             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
             Text="正在加载今日作业..." />
 
-        <ScrollViewer Grid.Row="2" Margin="0,18,0,16">
+        <ScrollViewer Grid.Row="2" Margin="0,18,0,16" VerticalScrollBarVisibility="Auto">
             <ItemsControl x:Name="HomeworkItemsControl">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -65,25 +65,30 @@
                     <DataTemplate x:DataType="local:HomeworkItem">
                         <Border
                             MinWidth="220"
-                            MaxWidth="420"
+                            MaxWidth="600"
                             Margin="0,0,14,14"
                             Padding="22"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch"
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1"
-                            CornerRadius="18">
+                            BorderThickness="0"
+                            CornerRadius="10">
+                            <Border.Shadow>
+                                <ThemeShadow />
+                            </Border.Shadow>
                             <StackPanel Spacing="10">
                                 <TextBlock
                                     FontSize="22"
                                     FontWeight="SemiBold"
                                     Text="{x:Bind Subject}" />
-                                <TextBlock
+                                <TextBox
+                                    IsReadOnly="True"
+                                    AcceptsReturn="True"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    Padding="0"
                                     FontSize="17"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Text="{x:Bind Content}"
-                                    TextWrapping="WrapWholeWords" />
+                                    Text="{x:Bind Content, Mode=OneWay}"
+                                    TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </DataTemplate>
