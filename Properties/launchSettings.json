@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CSD (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "CSD (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
