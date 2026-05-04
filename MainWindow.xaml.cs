@@ -588,18 +588,18 @@ namespace CSD
             try
             {
                 using var document = JsonDocument.Parse(listResponse);
-                var allHomework = new List<(int Id, string Name)>();
+                var allHomework = new List<(int Order, string Name)>();
 
                 foreach (var element in document.RootElement.EnumerateArray())
                 {
-                    if (element.TryGetProperty("id", out var idElement) &&
+                    if (element.TryGetProperty("order", out var orderElement) &&
                         element.TryGetProperty("name", out var nameElement))
                     {
-                        int id = idElement.GetInt32();
+                        int order = orderElement.GetInt32();
                         string name = nameElement.GetString() ?? "";
                         if (!string.IsNullOrWhiteSpace(name))
                         {
-                            allHomework.Add((id, name));
+                            allHomework.Add((order, name));
                         }
                     }
                 }
@@ -617,11 +617,11 @@ namespace CSD
 
                 UndoneHomeworkPanel.Visibility = Visibility.Visible;
 
-                foreach (var (id, name) in undoneHomework)
+                foreach (var (order, name) in undoneHomework)
                 {
                     var button = new Button
                     {
-                        Content = $"#{id} {name}",
+                        Content = $"#{order} {name}",
                         Tag = name,
                         MinWidth = 100
                     };
@@ -640,8 +640,33 @@ namespace CSD
             if (sender is not Button button || button.Tag is not string homeworkName)
                 return;
 
-            // 创建一个新的作业条目
-            var newContent = "待完成";
+            var xamlRoot = button.XamlRoot;
+
+            // 弹出编辑对话框，和正常修改作业流一致
+            var editBox = new TextBox
+            {
+                Text = "",
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                Height = 300,
+                PlaceholderText = "输入作业内容..."
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = $"添加 {homeworkName} 作业",
+                Content = editBox,
+                PrimaryButtonText = "保存",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = xamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            var newContent = editBox.Text;
 
             // 构建新的 homework 对象
             try
