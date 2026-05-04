@@ -281,7 +281,7 @@ namespace CSD
                 double availableWidth = HomeworkContainer.ActualWidth;
                 if (availableWidth <= 0) availableWidth = 800;
 
-                int itemsPerRow = Math.Max(1, Math.Min(items.Count, (int)((availableWidth + gap) / (minCardWidth + gap))));
+                int itemsPerRow = Math.Max(1, Math.Min(items.Count, Math.Min(4, (int)((availableWidth + gap) / (minCardWidth + gap)))));
                 int rows = (int)Math.Ceiling((double)items.Count / itemsPerRow);
 
                 var grid = new Grid
