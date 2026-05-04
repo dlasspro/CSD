@@ -22,8 +22,6 @@ namespace CSD
         private const string AutoRefreshIntervalKey = "Settings_AutoRefreshInterval";
         private const string CarouselIntervalKey = "Settings_CarouselInterval";
         private const string CarouselFontSizeKey = "Settings_CarouselFontSize";
-        private const string BubbleEnabledKey = "Settings_BubbleEnabled";
-        private const string BubbleDisplayModeKey = "Settings_BubbleDisplayMode";
         private const string TokenKey = "Token";
 
         private readonly Action _onSettingsChanged;
@@ -37,8 +35,6 @@ namespace CSD
         private readonly NumberBox _autoRefreshIntervalBox;
         private readonly NumberBox _carouselIntervalBox;
         private readonly NumberBox _carouselFontSizeBox;
-        private readonly ToggleSwitch _bubbleEnabledToggle;
-        private readonly ComboBox _bubbleDisplayModeBox;
         private readonly TextBlock _currentTokenText;
 
         public SettingsWindow(Action onSettingsChanged)
@@ -85,23 +81,6 @@ namespace CSD
 
             _carouselFontSizeBox = CreateNumberBox("轮播字体大小", 16, 120, 4, 48);
             _carouselFontSizeBox.Value = (double)(settings[CarouselFontSizeKey] ?? 48.0);
-
-            // --- 悬浮球设置 ---
-            _bubbleEnabledToggle = new ToggleSwitch
-            {
-                Header = "关闭时显示悬浮球",
-                IsOn = settings.ContainsKey(BubbleEnabledKey) ? (bool)(settings[BubbleEnabledKey] ?? true) : true
-            };
-
-            _bubbleDisplayModeBox = new ComboBox
-            {
-                Header = "悬浮球显示内容",
-                SelectedIndex = (int)(settings[BubbleDisplayModeKey] ?? 0),
-                Width = 200
-            };
-            _bubbleDisplayModeBox.Items.Add("不显示文字");
-            _bubbleDisplayModeBox.Items.Add("学生总数");
-            _bubbleDisplayModeBox.Items.Add("上次抽取的学生");
 
             // --- Token 状态 ---
             var hasToken = settings.ContainsKey(TokenKey) && !string.IsNullOrWhiteSpace(settings[TokenKey] as string);
@@ -166,9 +145,6 @@ namespace CSD
             form.Children.Add(_autoRefreshIntervalBox);
             form.Children.Add(_carouselIntervalBox);
             form.Children.Add(_carouselFontSizeBox);
-            form.Children.Add(CreateSectionHeader("悬浮球设置"));
-            form.Children.Add(_bubbleEnabledToggle);
-            form.Children.Add(_bubbleDisplayModeBox);
             form.Children.Add(tokenSection);
             form.Children.Add(ioStack);
             form.Children.Add(saveButton);
@@ -210,8 +186,6 @@ namespace CSD
             settings[AutoRefreshIntervalKey] = _autoRefreshIntervalBox.Value;
             settings[CarouselIntervalKey] = _carouselIntervalBox.Value;
             settings[CarouselFontSizeKey] = _carouselFontSizeBox.Value;
-            settings[BubbleEnabledKey] = _bubbleEnabledToggle.IsOn;
-            settings[BubbleDisplayModeKey] = (double)_bubbleDisplayModeBox.SelectedIndex;
 
             // 保存成功提示
             _onSettingsChanged?.Invoke();
@@ -283,8 +257,6 @@ namespace CSD
                     _autoRefreshIntervalBox.Value = (double)(settings[AutoRefreshIntervalKey] ?? 60.0);
                     _carouselIntervalBox.Value = (double)(settings[CarouselIntervalKey] ?? 5.0);
                     _carouselFontSizeBox.Value = (double)(settings[CarouselFontSizeKey] ?? 48.0);
-                    _bubbleEnabledToggle.IsOn = settings.ContainsKey(BubbleEnabledKey) ? (bool)(settings[BubbleEnabledKey] ?? true) : true;
-                    _bubbleDisplayModeBox.SelectedIndex = (int)(double)(settings[BubbleDisplayModeKey] ?? 0.0);
                     _currentTokenText.Text = settings.ContainsKey(TokenKey) ? "已设置" : "未设置";
                 }
                 catch (Exception ex)
@@ -299,17 +271,6 @@ namespace CSD
                     _ = dialog.ShowAsync();
                 }
             }
-        }
-
-        private static FrameworkElement CreateSectionHeader(string text)
-        {
-            return new TextBlock
-            {
-                Text = text,
-                FontSize = 18,
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Margin = new Thickness(0, 8, 0, 0)
-            };
         }
     }
 }

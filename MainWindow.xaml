@@ -17,13 +17,38 @@
         <!-- 主内容 -->
         <Grid Padding="24">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Header: 日期导航 + 操作按钮 -->
-            <Grid>
+            <!-- Row 0: 作业卡片 -->
+            <ScrollViewer
+                Grid.Row="0"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="HomeworkContainer" Spacing="14" />
+            </ScrollViewer>
+
+            <!-- Row 1: 状态文字 -->
+            <TextBlock
+                x:Name="StatusText"
+                Grid.Row="1"
+                Margin="0,12,0,0"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="正在加载今日作业..." />
+
+            <!-- Row 2: 未完成作业按钮 -->
+            <StackPanel
+                x:Name="UndoneHomeworkPanel"
+                Grid.Row="2"
+                Orientation="Horizontal"
+                Margin="0,12,0,0"
+                Spacing="8" />
+
+            <!-- Row 3: 底部导航栏 -->
+            <Grid Grid.Row="3" Margin="0,12,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
@@ -90,21 +115,6 @@
                     Content="随机抽取"
                     Margin="8,0,0,0" />
             </Grid>
-
-            <TextBlock
-                x:Name="StatusText"
-                Grid.Row="1"
-                Margin="0,18,0,0"
-                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Text="正在加载今日作业..." />
-
-            <ScrollViewer
-                Grid.Row="2"
-                Margin="0,18,0,16"
-                VerticalScrollBarVisibility="Auto"
-                HorizontalScrollBarVisibility="Disabled">
-                <StackPanel x:Name="HomeworkContainer" Spacing="14" />
-            </ScrollViewer>
         </Grid>
 
         <!-- 轮播覆盖层 -->

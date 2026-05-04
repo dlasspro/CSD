@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Numerics;
@@ -39,12 +40,8 @@ namespace CSD
         private int _carouselIndex = 0;
         private readonly DispatcherTimer _carouselTimer = new();
 
-        // 悬浮球
-        private const string BubbleEnabledKey = "Settings_BubbleEnabled";
-        private const string BubbleDisplayModeKey = "Settings_BubbleDisplayMode";
-        private FloatingBubbleWindow? _bubbleWindow;
-        private string _lastPickedStudent = "";
-        private int _studentCount = 0;
+        // 当前作业的科目名称集合（用于判断未完成作业）
+        private HashSet<string> _currentHomeworkSubjects = new();
 
         private string BaseUrl
         {
@@ -61,21 +58,10 @@ namespace CSD
 
             RestoreWindowState();
 
-            // 拦截关闭：启用悬浮球时隐藏窗口而非关闭
+            // 关闭时保存窗口状态
             AppWindow.Closing += (sender, args) =>
             {
-                var settings = ApplicationData.Current.LocalSettings.Values;
-                bool bubbleEnabled = (bool)(settings[BubbleEnabledKey] ?? true);
-
-                if (bubbleEnabled)
-                {
-                    args.Cancel = true;
-                    MinimizeToBubble();
-                }
-                else
-                {
-                    SaveWindowState();
-                }
+                SaveWindowState();
             };
 
             Closed += (sender, args) => SaveWindowState();
@@ -204,6 +190,9 @@ namespace CSD
 
             _rawJson = responseBody;
             ShowHomework(responseBody);
+
+            // 加载完成后，刷新未完成作业列表
+            await LoadUndoneHomeworkAsync(responseBody);
         }
 
         private async Task<string?> SendKvRequestAsync(HttpMethod method, string path, string? jsonBody = null)
@@ -256,6 +245,7 @@ namespace CSD
                 }
 
                 var items = new List<HomeworkItem>();
+                _currentHomeworkSubjects.Clear();
                 foreach (var subject in homework.EnumerateObject())
                 {
                     var content = subject.Value.ValueKind == JsonValueKind.Object && subject.Value.TryGetProperty("content", out var contentElement)
@@ -267,6 +257,7 @@ namespace CSD
                         Subject = subject.Name,
                         Content = string.IsNullOrWhiteSpace(content) ? "暂无内容" : content
                     });
+                    _currentHomeworkSubjects.Add(subject.Name);
                 }
 
                 HomeworkContainer.Children.Clear();
@@ -543,49 +534,155 @@ namespace CSD
             CarouselProgressText.Text = $"{_carouselIndex + 1} / {_carouselItems.Count}";
         }
 
-        // ========== 悬浮球功能 ==========
+        // ========== 未完成作业 ==========
 
-        private void MinimizeToBubble()
+        private async Task LoadUndoneHomeworkAsync(string currentHomeworkJson)
         {
-            SaveWindowState();
+            UndoneHomeworkPanel.Children.Clear();
 
-            if (_bubbleWindow == null)
+            // 获取全部作业列表
+            var listResponse = await SendKvRequestAsync(HttpMethod.Get, "/kv/classworks-list-info");
+            if (string.IsNullOrWhiteSpace(listResponse))
             {
-                _bubbleWindow = new FloatingBubbleWindow(this);
+                return;
             }
 
-            _bubbleWindow.RefreshDisplay();
-            _bubbleWindow.Activate();
-
-            // 隐藏主窗口（最小化到任务栏）
-            var presenter = (OverlappedPresenter)AppWindow.Presenter;
-            presenter.Minimize();
-        }
-
-        public void RestoreFromBubble()
-        {
-            // 恢复主窗口
-            var presenter = (OverlappedPresenter)AppWindow.Presenter;
-            presenter.Restore();
-
-            // 激活并置前
-            this.Activate();
-
-            // 隐藏悬浮球
-            if (_bubbleWindow != null)
+            try
             {
-                _bubbleWindow.AppWindow.Hide();
+                using var document = JsonDocument.Parse(listResponse);
+                var allHomework = new List<(int Id, string Name)>();
+
+                foreach (var element in document.RootElement.EnumerateArray())
+                {
+                    if (element.TryGetProperty("id", out var idElement) &&
+                        element.TryGetProperty("name", out var nameElement))
+                    {
+                        int id = idElement.GetInt32();
+                        string name = nameElement.GetString() ?? "";
+                        if (!string.IsNullOrWhiteSpace(name))
+                        {
+                            allHomework.Add((id, name));
+                        }
+                    }
+                }
+
+                // 过滤出未完成的作业（不在当前作业科目中的）
+                var undoneHomework = allHomework
+                    .Where(h => !_currentHomeworkSubjects.Contains(h.Name))
+                    .ToList();
+
+                if (undoneHomework.Count == 0)
+                {
+                    UndoneHomeworkPanel.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                UndoneHomeworkPanel.Visibility = Visibility.Visible;
+
+                foreach (var (id, name) in undoneHomework)
+                {
+                    var button = new Button
+                    {
+                        Content = $"#{id} {name}",
+                        Tag = name,
+                        MinWidth = 100
+                    };
+                    button.Click += UndoneHomeworkButton_Click;
+                    UndoneHomeworkPanel.Children.Add(button);
+                }
+            }
+            catch (JsonException)
+            {
+                // 静默失败
             }
         }
 
-        public string GetStudentCountDisplay()
+        private async void UndoneHomeworkButton_Click(object sender, RoutedEventArgs e)
         {
-            return _studentCount > 0 ? $"{_studentCount}人" : "CSD";
-        }
+            if (sender is not Button button || button.Tag is not string homeworkName)
+                return;
 
-        public string GetLastPickedStudentDisplay()
-        {
-            return !string.IsNullOrEmpty(_lastPickedStudent) ? _lastPickedStudent : "CSD";
+            // 创建一个新的作业条目
+            var newContent = "待完成";
+
+            // 构建新的 homework 对象
+            try
+            {
+                var homeworkDict = new Dictionary<string, object>();
+
+                if (!string.IsNullOrWhiteSpace(_rawJson))
+                {
+                    using var document = JsonDocument.Parse(_rawJson);
+                    if (document.RootElement.TryGetProperty("homework", out var homeworkElement) && homeworkElement.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var subj in homeworkElement.EnumerateObject())
+                        {
+                            if (subj.Value.ValueKind == JsonValueKind.Object)
+                            {
+                                var inner = new Dictionary<string, object>();
+                                foreach (var p in subj.Value.EnumerateObject())
+                                {
+                                    inner[p.Name] = p.Value.ValueKind == JsonValueKind.String
+                                        ? p.Value.GetString()!
+                                        : p.Value.GetRawText();
+                                }
+                                homeworkDict[subj.Name] = inner;
+                            }
+                            else
+                            {
+                                homeworkDict[subj.Name] = subj.Value.GetRawText();
+                            }
+                        }
+                    }
+                }
+
+                // 添加新作业
+                homeworkDict[homeworkName] = new Dictionary<string, object> { ["content"] = newContent };
+
+                // 构建 attendance 对象
+                var attendanceDict = new Dictionary<string, object>();
+                if (!string.IsNullOrWhiteSpace(_rawJson))
+                {
+                    using var document = JsonDocument.Parse(_rawJson);
+                    if (document.RootElement.TryGetProperty("attendance", out var attendanceElement) && attendanceElement.ValueKind == JsonValueKind.Object)
+                    {
+                        foreach (var att in attendanceElement.EnumerateObject())
+                        {
+                            if (att.Value.ValueKind == JsonValueKind.Array)
+                            {
+                                var list = new List<string>();
+                                foreach (var item in att.Value.EnumerateArray())
+                                    list.Add(item.GetString() ?? "");
+                                attendanceDict[att.Name] = list;
+                            }
+                            else
+                            {
+                                attendanceDict[att.Name] = att.Value.GetRawText();
+                            }
+                        }
+                    }
+                }
+
+                var payload = new Dictionary<string, object>
+                {
+                    ["homework"] = homeworkDict,
+                    ["attendance"] = attendanceDict
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                var dateKey = $"classworks-data-{_currentDate:yyyyMMdd}";
+                var response = await SendKvRequestAsync(HttpMethod.Post, $"/kv/{Uri.EscapeDataString(dateKey)}", json);
+
+                if (response != null)
+                {
+                    _rawJson = json;
+                    await LoadHomeworkAsync(_currentDate);
+                }
+            }
+            catch (Exception)
+            {
+                StatusText.Text = "添加作业失败。";
+            }
         }
 
         // ========== 随机抽取学生 ==========
@@ -614,65 +711,61 @@ namespace CSD
                     }
                 }
 
-                _studentCount = students.Count;
-
                 if (students.Count == 0)
                 {
                     StatusText.Text = "学生列表为空。";
                     return;
                 }
 
-                // 随机抽取
                 var random = new Random();
-                var picked = students[random.Next(students.Count)];
-                _lastPickedStudent = picked;
+                var xamlRoot = ((Button)sender).XamlRoot;
 
-                // 更新悬浮球显示
-                _bubbleWindow?.RefreshDisplay();
-
-                // 显示抽取结果
-                var dialog = new ContentDialog
+                // 使用循环而非递归，避免 ContentDialog 并发冲突
+                while (true)
                 {
-                    Title = "随机抽取结果",
-                    Content = new StackPanel
+                    var picked = students[random.Next(students.Count)];
+
+                    var dialog = new ContentDialog
                     {
-                        Spacing = 12,
-                        Children =
+                        Title = "随机抽取结果",
+                        Content = new StackPanel
                         {
-                            new TextBlock
+                            Spacing = 12,
+                            Children =
                             {
-                                Text = $"共 {students.Count} 名学生",
-                                FontSize = 14,
-                                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
-                            },
-                            new TextBlock
-                            {
-                                Text = picked,
-                                FontSize = 48,
-                                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
-                                HorizontalAlignment = HorizontalAlignment.Center,
-                                Margin = new Thickness(0, 8, 0, 8)
-                            },
-                            new TextBlock
-                            {
-                                Text = "恭喜被抽中！",
-                                FontSize = 16,
-                                HorizontalAlignment = HorizontalAlignment.Center,
-                                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+                                new TextBlock
+                                {
+                                    Text = $"共 {students.Count} 名学生",
+                                    FontSize = 14,
+                                    Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+                                },
+                                new TextBlock
+                                {
+                                    Text = picked,
+                                    FontSize = 48,
+                                    FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                                    HorizontalAlignment = HorizontalAlignment.Center,
+                                    Margin = new Thickness(0, 8, 0, 8)
+                                },
+                                new TextBlock
+                                {
+                                    Text = "恭喜被抽中！",
+                                    FontSize = 16,
+                                    HorizontalAlignment = HorizontalAlignment.Center,
+                                    Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+                                }
                             }
-                        }
-                    },
-                    PrimaryButtonText = "重新抽取",
-                    CloseButtonText = "确定",
-                    DefaultButton = ContentDialogButton.Primary,
-                    XamlRoot = ((Button)sender).XamlRoot
-                };
+                        },
+                        PrimaryButtonText = "重新抽取",
+                        CloseButtonText = "确定",
+                        DefaultButton = ContentDialogButton.Primary,
+                        XamlRoot = xamlRoot
+                    };
 
-                var result = await dialog.ShowAsync();
-                if (result == ContentDialogResult.Primary)
-                {
-                    // 重新抽取
-                    PickRandomStudentButton_Click(sender, e);
+                    var result = await dialog.ShowAsync();
+                    if (result != ContentDialogResult.Primary)
+                        break;
+                    // 如果点击"重新抽取"，继续循环重新抽取
                 }
             }
             catch (JsonException)
