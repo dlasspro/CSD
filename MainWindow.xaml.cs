@@ -39,6 +39,13 @@ namespace CSD
         private int _carouselIndex = 0;
         private readonly DispatcherTimer _carouselTimer = new();
 
+        // 悬浮球
+        private const string BubbleEnabledKey = "Settings_BubbleEnabled";
+        private const string BubbleDisplayModeKey = "Settings_BubbleDisplayMode";
+        private FloatingBubbleWindow? _bubbleWindow;
+        private string _lastPickedStudent = "";
+        private int _studentCount = 0;
+
         private string BaseUrl
         {
             get
@@ -53,6 +60,24 @@ namespace CSD
             InitializeComponent();
 
             RestoreWindowState();
+
+            // 拦截关闭：启用悬浮球时隐藏窗口而非关闭
+            AppWindow.Closing += (sender, args) =>
+            {
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                bool bubbleEnabled = (bool)(settings[BubbleEnabledKey] ?? true);
+
+                if (bubbleEnabled)
+                {
+                    args.Cancel = true;
+                    MinimizeToBubble();
+                }
+                else
+                {
+                    SaveWindowState();
+                }
+            };
+
             Closed += (sender, args) => SaveWindowState();
 
             _autoRefreshTimer.Tick += AutoRefreshTimer_Tick;
@@ -516,6 +541,144 @@ namespace CSD
             CarouselContentText.Text = item.Content;
             CarouselContentText.FontSize = carouselFontSize;
             CarouselProgressText.Text = $"{_carouselIndex + 1} / {_carouselItems.Count}";
+        }
+
+        // ========== 悬浮球功能 ==========
+
+        private void MinimizeToBubble()
+        {
+            SaveWindowState();
+
+            if (_bubbleWindow == null)
+            {
+                _bubbleWindow = new FloatingBubbleWindow(this);
+            }
+
+            _bubbleWindow.RefreshDisplay();
+            _bubbleWindow.Activate();
+
+            // 隐藏主窗口（最小化到任务栏）
+            var presenter = (OverlappedPresenter)AppWindow.Presenter;
+            presenter.Minimize();
+        }
+
+        public void RestoreFromBubble()
+        {
+            // 恢复主窗口
+            var presenter = (OverlappedPresenter)AppWindow.Presenter;
+            presenter.Restore();
+
+            // 激活并置前
+            this.Activate();
+
+            // 隐藏悬浮球
+            if (_bubbleWindow != null)
+            {
+                _bubbleWindow.AppWindow.Hide();
+            }
+        }
+
+        public string GetStudentCountDisplay()
+        {
+            return _studentCount > 0 ? $"{_studentCount}人" : "CSD";
+        }
+
+        public string GetLastPickedStudentDisplay()
+        {
+            return !string.IsNullOrEmpty(_lastPickedStudent) ? _lastPickedStudent : "CSD";
+        }
+
+        // ========== 随机抽取学生 ==========
+
+        private async void PickRandomStudentButton_Click(object sender, RoutedEventArgs e)
+        {
+            var responseBody = await SendKvRequestAsync(HttpMethod.Get, "/kv/classworks-list-main");
+            if (string.IsNullOrWhiteSpace(responseBody))
+            {
+                StatusText.Text = "获取学生列表失败。";
+                return;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(responseBody);
+                var students = new List<string>();
+
+                foreach (var element in document.RootElement.EnumerateArray())
+                {
+                    if (element.TryGetProperty("name", out var nameElement))
+                    {
+                        var name = nameElement.GetString();
+                        if (!string.IsNullOrWhiteSpace(name))
+                            students.Add(name);
+                    }
+                }
+
+                _studentCount = students.Count;
+
+                if (students.Count == 0)
+                {
+                    StatusText.Text = "学生列表为空。";
+                    return;
+                }
+
+                // 随机抽取
+                var random = new Random();
+                var picked = students[random.Next(students.Count)];
+                _lastPickedStudent = picked;
+
+                // 更新悬浮球显示
+                _bubbleWindow?.RefreshDisplay();
+
+                // 显示抽取结果
+                var dialog = new ContentDialog
+                {
+                    Title = "随机抽取结果",
+                    Content = new StackPanel
+                    {
+                        Spacing = 12,
+                        Children =
+                        {
+                            new TextBlock
+                            {
+                                Text = $"共 {students.Count} 名学生",
+                                FontSize = 14,
+                                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+                            },
+                            new TextBlock
+                            {
+                                Text = picked,
+                                FontSize = 48,
+                                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                                HorizontalAlignment = HorizontalAlignment.Center,
+                                Margin = new Thickness(0, 8, 0, 8)
+                            },
+                            new TextBlock
+                            {
+                                Text = "恭喜被抽中！",
+                                FontSize = 16,
+                                HorizontalAlignment = HorizontalAlignment.Center,
+                                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+                            }
+                        }
+                    },
+                    PrimaryButtonText = "重新抽取",
+                    CloseButtonText = "确定",
+                    DefaultButton = ContentDialogButton.Primary,
+                    XamlRoot = ((Button)sender).XamlRoot
+                };
+
+                var result = await dialog.ShowAsync();
+                if (result == ContentDialogResult.Primary)
+                {
+                    // 重新抽取
+                    PickRandomStudentButton_Click(sender, e);
+                }
+            }
+            catch (JsonException)
+            {
+                StatusText.Text = "学生列表数据格式错误。";
+            }
         }
     }
 }

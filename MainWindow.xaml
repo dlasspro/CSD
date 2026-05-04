@@ -32,6 +32,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Button
@@ -80,6 +81,14 @@
                     VerticalAlignment="Center"
                     Click="ToggleCarouselButton_Click"
                     Content="轮播" />
+
+                <Button
+                    x:Name="PickRandomStudentButton"
+                    Grid.Column="7"
+                    VerticalAlignment="Center"
+                    Click="PickRandomStudentButton_Click"
+                    Content="随机抽取"
+                    Margin="8,0,0,0" />
             </Grid>
 
             <TextBlock
