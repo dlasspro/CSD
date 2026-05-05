@@ -10,6 +10,7 @@ namespace CSD
         private readonly List<HomeworkItem> _carouselItems;
         private int _carouselIndex = 0;
         private readonly DispatcherTimer _carouselTimer = new();
+        private bool _isFirstShow = true;
 
         /// <summary>
         /// 退出轮播时的回调，用于重新打开主窗口。
@@ -94,10 +95,20 @@ namespace CSD
             CarouselContentText.LineHeight = carouselFontSize * 1.6;
             CarouselProgressText.Text = $"{_carouselIndex + 1} / {_carouselItems.Count}";
 
-            AnimationHelper.AnimateEntrance(CarouselSubjectText, fromY: 14f, durationMs: 240);
-            AnimationHelper.AnimateEntrance(CarouselContentText, fromY: 20f, durationMs: 280, delayMs: 60);
-            AnimationHelper.AnimateEntrance(CarouselProgressText, fromY: -8f, durationMs: 200);
-            AnimationHelper.AnimateEntrance(ExitCarouselButton, fromY: 12f, durationMs: 220, delayMs: 100);
+            if (_isFirstShow)
+            {
+                _isFirstShow = false;
+                AnimationHelper.AnimateEntrance(CarouselProgressText, fromY: -8f, durationMs: 200);
+                AnimationHelper.AnimateEntrance(CarouselSubjectText, fromY: 14f, durationMs: 240);
+                AnimationHelper.AnimateEntrance(CarouselContentText, fromY: 20f, durationMs: 280, delayMs: 60);
+                AnimationHelper.AnimateEntrance(ExitCarouselButton, fromY: 12f, durationMs: 220, delayMs: 100);
+            }
+            else
+            {
+                // 切换科目时只对内容区域做入场动画，不影响底部按钮和顶部进度
+                AnimationHelper.AnimateEntrance(CarouselSubjectText, fromY: 14f, durationMs: 240);
+                AnimationHelper.AnimateEntrance(CarouselContentText, fromY: 20f, durationMs: 280, delayMs: 60);
+            }
         }
     }
 }
