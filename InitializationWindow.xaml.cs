@@ -83,5 +83,19 @@ namespace CSD
             mainWindow.Activate();
             Close();
         }
+
+        private void TutorialButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://520.re/csh",
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch { }
+        }
     }
 }

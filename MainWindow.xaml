@@ -151,13 +151,14 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- 顶部退出按钮 -->
+            <!-- 底部退出按钮 -->
             <Button
                 x:Name="ExitCarouselButton"
-                Grid.Row="0"
+                Grid.Row="2"
                 Content="✕ 退出轮播"
                 HorizontalAlignment="Right"
-                Margin="0,16,16,0"
+                VerticalAlignment="Bottom"
+                Margin="0,0,16,16"
                 Click="ExitCarouselButton_Click" />
 
             <!-- 轮播内容 -->

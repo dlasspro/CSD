@@ -122,6 +122,21 @@ namespace CSD
             var ioStack = new StackPanel { Orientation = Orientation.Horizontal };
             ioStack.Children.Add(exportButton);
             ioStack.Children.Add(importButton);
+            var webSettingsButton = new Button { Content = "网页端设置", Margin = new Thickness(8, 0, 0, 0) };
+            webSettingsButton.Click += (_, _) =>
+            {
+                try
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "https://cs.houlang.cloud/settings",
+                        UseShellExecute = true
+                    };
+                    System.Diagnostics.Process.Start(psi);
+                }
+                catch { }
+            };
+            ioStack.Children.Add(webSettingsButton);
 
             // --- 保存/取消 ---
             var saveButton = new Button
