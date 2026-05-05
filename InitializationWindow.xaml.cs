@@ -15,6 +15,13 @@ namespace CSD
         public InitializationWindow()
         {
             InitializeComponent();
+            ConfigureIntegratedTitleBar();
+
+            try
+            {
+                AppWindow.SetIcon("Assets/StoreLogo.png");
+            }
+            catch { }
 
             RestoreWindowState();
             Closed += (sender, args) => SaveWindowState();
@@ -23,6 +30,25 @@ namespace CSD
             {
                 rootContent.Loaded += RootContent_Loaded;
             }
+        }
+
+        private void ConfigureIntegratedTitleBar()
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported())
+            {
+                return;
+            }
+
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            UpdateTitleBarLayout(AppWindow.TitleBar);
+        }
+
+        private void UpdateTitleBarLayout(AppWindowTitleBar titleBar)
+        {
+            LeftInsetColumn.Width = new GridLength(titleBar.LeftInset);
+            RightInsetColumn.Width = new GridLength(titleBar.RightInset);
         }
 
         private void RootContent_Loaded(object sender, RoutedEventArgs e)
