@@ -18,6 +18,21 @@ namespace CSD
 
             RestoreWindowState();
             Closed += (sender, args) => SaveWindowState();
+
+            if (Content is FrameworkElement rootContent)
+            {
+                rootContent.Loaded += RootContent_Loaded;
+            }
+        }
+
+        private void RootContent_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement rootContent)
+            {
+                rootContent.Loaded -= RootContent_Loaded;
+                AnimationHelper.AnimateEntrance(rootContent, fromY: 18f, durationMs: 360);
+                AnimationHelper.ApplyStandardInteractions(rootContent);
+            }
         }
 
         private void RestoreWindowState()

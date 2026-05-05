@@ -29,6 +29,10 @@ namespace CSD
             };
 
             Content = _scrollViewer;
+            _scrollViewer.Loaded += (_, _) =>
+            {
+                AnimationHelper.AnimateEntrance(_scrollViewer, fromY: 18f, durationMs: 360);
+            };
 
             // 设置窗口大小
             AppWindow.Resize(new Windows.Graphics.SizeInt32(600, 400));
@@ -98,6 +102,8 @@ namespace CSD
                 }
 
                 entry.Child = stack;
+                AnimationHelper.AttachHoverAnimation(entry, 1.01f, 0.995f, -2f);
+                AnimationHelper.AnimateEntrance(entry, fromY: 10f, durationMs: 220);
                 _logPanel.Children.Add(entry);
 
                 // 自动滚动到底部

@@ -168,6 +168,11 @@ namespace CSD
             };
 
             Content = scroll;
+            scroll.Loaded += (_, _) =>
+            {
+                AnimationHelper.AnimateEntrance(scroll, fromY: 18f, durationMs: 360);
+                AnimationHelper.ApplyStandardInteractions(scroll);
+            };
         }
 
         private static NumberBox CreateNumberBox(string header, double minimum, double maximum, double step, double defaultValue)

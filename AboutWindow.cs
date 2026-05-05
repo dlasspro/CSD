@@ -110,6 +110,11 @@ namespace CSD
             };
 
             Content = scroll;
+            scroll.Loaded += (_, _) =>
+            {
+                AnimationHelper.AnimateEntrance(scroll, fromY: 18f, durationMs: 360);
+                AnimationHelper.ApplyStandardInteractions(scroll);
+            };
 
             AppWindow.Resize(new Windows.Graphics.SizeInt32(420, 560));
         }

@@ -27,7 +27,14 @@
                 Grid.Row="0"
                 VerticalScrollBarVisibility="Auto"
                 HorizontalScrollBarVisibility="Disabled">
-                <StackPanel x:Name="HomeworkContainer" Spacing="14" />
+                <StackPanel x:Name="HomeworkContainer" Spacing="14">
+                    <StackPanel.ChildrenTransitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition IsStaggeringEnabled="True" />
+                            <RepositionThemeTransition />
+                        </TransitionCollection>
+                    </StackPanel.ChildrenTransitions>
+                </StackPanel>
             </ScrollViewer>
 
             <!-- Row 1: 状态文字 -->
@@ -53,7 +60,14 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Margin="0,0,0,8"
-                    Spacing="8" />
+                    Spacing="8">
+                    <StackPanel.ChildrenTransitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition IsStaggeringEnabled="True" />
+                            <RepositionThemeTransition />
+                        </TransitionCollection>
+                    </StackPanel.ChildrenTransitions>
+                </StackPanel>
 
                 <!-- 导航控件 -->
                 <Grid Grid.Row="1">
@@ -75,15 +89,39 @@
                     Content="◀"
                     Margin="0,0,8,0" />
 
-                <StackPanel Grid.Column="1" Spacing="4">
-                    <TextBlock
-                        FontSize="32"
-                        FontWeight="SemiBold"
-                        Text="作业" />
-                    <TextBlock
-                        x:Name="TodayKeyText"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
+                <Button
+                    x:Name="DatePickerButton"
+                    Grid.Column="1"
+                    HorizontalAlignment="Left"
+                    Padding="14,10"
+                    MinWidth="220"
+                    Tag="DisableHoverAnimation">
+                    <Button.Flyout>
+                        <Flyout
+                            x:Name="DateFlyout"
+                            Placement="Top"
+                            Opening="DateFlyout_Opening">
+                            <CalendarView
+                                x:Name="DateCalendarView"
+                                SelectionMode="Single"
+                                IsGroupLabelVisible="True"
+                                MinWidth="320"
+                                SelectedDatesChanged="DateCalendarView_SelectedDatesChanged" />
+                        </Flyout>
+                    </Button.Flyout>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            x:Name="CurrentDateTitleText"
+                            FontSize="28"
+                            FontWeight="SemiBold"
+                            Text="今日作业" />
+                        <TextBlock
+                            x:Name="TodayKeyText"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="点击选择日期" />
+                    </StackPanel>
+                </Button>
 
                 <Button
                     x:Name="NextDateButton"
@@ -171,6 +209,12 @@
                     x:Name="CarouselContentPanel"
                     Spacing="32"
                     Padding="48">
+                    <StackPanel.ChildrenTransitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition IsStaggeringEnabled="True" />
+                            <RepositionThemeTransition />
+                        </TransitionCollection>
+                    </StackPanel.ChildrenTransitions>
                     <TextBlock
                         x:Name="CarouselSubjectText"
                         TextWrapping="WrapWholeWords"

@@ -19,6 +19,12 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Spacing="16">
+            <StackPanel.ChildrenTransitions>
+                <TransitionCollection>
+                    <EntranceThemeTransition IsStaggeringEnabled="True" />
+                    <RepositionThemeTransition />
+                </TransitionCollection>
+            </StackPanel.ChildrenTransitions>
             <TextBlock
                 HorizontalAlignment="Center"
                 FontSize="24"

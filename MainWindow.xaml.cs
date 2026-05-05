@@ -40,6 +40,8 @@ namespace CSD
         private int _carouselIndex = 0;
         private readonly DispatcherTimer _carouselTimer = new();
         private DebugWindow? _debugWindow;
+        private bool _isUpdatingCalendarSelection;
+        private int _carouselOverlayAnimationToken;
 
         // 当前作业的科目名称集合（用于判断未完成作业）
         private HashSet<string> _currentHomeworkSubjects = new();
@@ -76,8 +78,23 @@ namespace CSD
 
             _autoRefreshTimer.Tick += AutoRefreshTimer_Tick;
             RestartAutoRefreshTimer();
+            if (Content is FrameworkElement rootContent)
+            {
+                rootContent.Loaded += RootContent_Loaded;
+            }
 
+            UpdateDateDisplay();
             _ = LoadHomeworkAsync(_currentDate);
+        }
+
+        private void RootContent_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement rootContent)
+            {
+                rootContent.Loaded -= RootContent_Loaded;
+                AnimationHelper.AnimateEntrance(rootContent, fromY: 16f, durationMs: 380);
+                AnimationHelper.ApplyStandardInteractions(rootContent);
+            }
         }
 
         private void RestoreWindowState()
@@ -197,10 +214,51 @@ namespace CSD
             await LoadHomeworkAsync(_currentDate);
         }
 
+        private void DateFlyout_Opening(object sender, object e)
+        {
+            UpdateDateDisplay();
+        }
+
+        private async void DateCalendarView_SelectedDatesChanged(CalendarView sender, CalendarViewSelectedDatesChangedEventArgs args)
+        {
+            if (_isUpdatingCalendarSelection || sender.SelectedDates.Count == 0)
+            {
+                return;
+            }
+
+            var selectedDate = sender.SelectedDates[0].Date;
+            if (DateFlyout.IsOpen)
+            {
+                DateFlyout.Hide();
+            }
+
+            _currentDate = selectedDate.Date;
+            await LoadHomeworkAsync(_currentDate);
+        }
+
+        private void UpdateDateDisplay()
+        {
+            CurrentDateTitleText.Text = _currentDate.Date == DateTime.Today.Date
+                ? "今日作业"
+                : _currentDate.ToString("yyyy年M月d日");
+
+            TodayKeyText.Text = _currentDate.Date == DateTime.Today.Date
+                ? $"{_currentDate:yyyy-MM-dd} · {_currentDate:dddd} · 点击选择日期"
+                : $"{_currentDate:yyyy-MM-dd} · {_currentDate:dddd} · 点击切换日期";
+
+            _isUpdatingCalendarSelection = true;
+            DateCalendarView.SelectedDates.Clear();
+            DateCalendarView.SelectedDates.Add(_currentDate);
+            DateCalendarView.SetDisplayDate(_currentDate);
+            _isUpdatingCalendarSelection = false;
+        }
+
         private async Task LoadHomeworkAsync(DateTime date)
         {
+            _currentDate = date.Date;
+            UpdateDateDisplay();
+
             var dateKey = $"classworks-data-{date:yyyyMMdd}";
-            TodayKeyText.Text = dateKey;
 
             bool isToday = date.Date == DateTime.Now.Date;
             StatusText.Text = isToday
@@ -330,36 +388,39 @@ namespace CSD
                 double subjectFontSize = (double)(settings["Settings_SubjectFontSize"] ?? 22.0);
                 double contentFontSize = (double)(settings["Settings_ContentFontSize"] ?? 17.0);
 
-                // 计算响应式列数
+                // 按可用宽度与内容长度分行，保证同排等高且偏宽内容能换到下一行
                 double availableWidth = HomeworkContainer.ActualWidth;
                 if (availableWidth <= 0) availableWidth = 800;
 
-                int itemsPerRow = Math.Max(1, Math.Min(items.Count, Math.Min(4, (int)((availableWidth + gap) / (minCardWidth + gap)))));
-                int rows = (int)Math.Ceiling((double)items.Count / itemsPerRow);
+                var rows = BuildCardRows(items, availableWidth, minCardWidth, gap, contentFontSize);
+                int animationIndex = 0;
 
-                var grid = new Grid
+                foreach (var rowItems in rows)
                 {
-                    ColumnSpacing = gap,
-                    RowSpacing = gap
-                };
+                    var rowGrid = new Grid
+                    {
+                        ColumnSpacing = gap,
+                        HorizontalAlignment = HorizontalAlignment.Stretch
+                    };
 
-                for (int j = 0; j < itemsPerRow; j++)
-                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    for (int column = 0; column < rowItems.Count; column++)
+                    {
+                        rowGrid.ColumnDefinitions.Add(new ColumnDefinition
+                        {
+                            Width = new GridLength(1, GridUnitType.Star)
+                        });
+                    }
 
-                for (int i = 0; i < rows; i++)
-                    grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                    for (int column = 0; column < rowItems.Count; column++)
+                    {
+                        var card = CreateCard(rowItems[column], subjectFontSize, contentFontSize, animationIndex++);
+                        Grid.SetColumn(card, column);
+                        rowGrid.Children.Add(card);
+                    }
 
-                for (int idx = 0; idx < items.Count; idx++)
-                {
-                    int row = idx / itemsPerRow;
-                    int col = idx % itemsPerRow;
-                    var card = CreateCard(items[idx], subjectFontSize, contentFontSize);
-                    Grid.SetRow(card, row);
-                    Grid.SetColumn(card, col);
-                    grid.Children.Add(card);
+                    HomeworkContainer.Children.Add(rowGrid);
+                    AnimationHelper.AnimateEntrance(rowGrid, fromY: 10f, durationMs: 260);
                 }
-
-                HomeworkContainer.Children.Add(grid);
             }
             catch (JsonException)
             {
@@ -368,7 +429,67 @@ namespace CSD
             }
         }
 
-        private Border CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize)
+        private static List<List<HomeworkItem>> BuildCardRows(
+            List<HomeworkItem> items,
+            double availableWidth,
+            double minCardWidth,
+            double gap,
+            double contentFontSize)
+        {
+            var rows = new List<List<HomeworkItem>>();
+            var currentRow = new List<HomeworkItem>();
+            double currentRowWidth = 0;
+
+            foreach (var item in items)
+            {
+                double estimatedWidth = EstimateCardWidth(item, minCardWidth, availableWidth, contentFontSize);
+                double nextRowWidth = currentRow.Count == 0
+                    ? estimatedWidth
+                    : currentRowWidth + gap + estimatedWidth;
+
+                bool exceedsWidth = nextRowWidth > availableWidth;
+                bool exceedsMaxColumns = currentRow.Count >= 4;
+
+                if (currentRow.Count > 0 && (exceedsWidth || exceedsMaxColumns))
+                {
+                    rows.Add(currentRow);
+                    currentRow = new List<HomeworkItem>();
+                    currentRowWidth = 0;
+                }
+
+                currentRow.Add(item);
+                currentRowWidth = currentRow.Count == 1
+                    ? estimatedWidth
+                    : currentRowWidth + gap + estimatedWidth;
+            }
+
+            if (currentRow.Count > 0)
+            {
+                rows.Add(currentRow);
+            }
+
+            return rows;
+        }
+
+        private static double EstimateCardWidth(HomeworkItem item, double minCardWidth, double availableWidth, double contentFontSize)
+        {
+            int longestLineLength = item.Content
+                .Split('\n')
+                .Select(line => line.Trim().Length)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            int titleLength = item.Subject.Trim().Length;
+            int referenceLength = Math.Max(longestLineLength, titleLength);
+
+            double extraWidth = Math.Max(0, referenceLength - 16) * Math.Max(5, contentFontSize * 0.45);
+            double desiredWidth = minCardWidth + extraWidth;
+            double maxWidth = Math.Max(minCardWidth, availableWidth);
+
+            return Math.Clamp(desiredWidth, minCardWidth, maxWidth);
+        }
+
+        private Button CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize, int index)
         {
             var border = new Border
             {
@@ -376,11 +497,11 @@ namespace CSD
                 Background = (Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"],
                 CornerRadius = new CornerRadius(10),
                 Translation = new Vector3(0, 0, 16),
-                Tag = item.Subject
+                VerticalAlignment = VerticalAlignment.Stretch
             };
 
             border.Shadow = new ThemeShadow();
-            border.Tapped += Card_Tapped;
+            AnimationHelper.AnimateEntrance(border, fromY: 18f, durationMs: 320, delayMs: Math.Min(index, 10) * 35);
 
             var stack = new StackPanel { Spacing = 10 };
             stack.Children.Add(new TextBlock
@@ -398,20 +519,32 @@ namespace CSD
             });
 
             border.Child = stack;
-            return border;
+
+            var button = new Button
+            {
+                Content = border,
+                Tag = item,
+                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(0),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Stretch
+            };
+            button.Click += CardButton_Click;
+
+            return button;
         }
 
-        private async void Card_Tapped(object sender, TappedRoutedEventArgs e)
+        private async void CardButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Border border || border.Tag is not string subject)
-                return;
-
-            if (border.Child is not StackPanel stack || stack.Children.Count < 2 || stack.Children[1] is not TextBlock contentBlock)
+            if (sender is not Button button || button.Tag is not HomeworkItem item)
                 return;
 
             var editBox = new TextBox
             {
-                Text = contentBlock.Text,
+                Text = item.Content,
                 AcceptsReturn = true,
                 TextWrapping = TextWrapping.Wrap,
                 Height = 300,
@@ -420,18 +553,18 @@ namespace CSD
 
             var dialog = new ContentDialog
             {
-                Title = $"修改 {subject} 作业",
+                Title = $"修改 {item.Subject} 作业",
                 Content = editBox,
                 PrimaryButtonText = "保存",
                 CloseButtonText = "取消",
                 DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = border.XamlRoot
+                XamlRoot = button.XamlRoot
             };
 
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                await SaveHomeworkAsync(subject, editBox.Text);
+                await SaveHomeworkAsync(item.Subject, editBox.Text);
             }
         }
 
@@ -533,13 +666,13 @@ namespace CSD
             _carouselIndex = 0;
             ShowCarouselItem();
             StartCarouselTimer();
-            CarouselOverlay.Visibility = Visibility.Visible;
+            ShowCarouselOverlay();
         }
 
-        private void ExitCarouselButton_Click(object sender, RoutedEventArgs e)
+        private async void ExitCarouselButton_Click(object sender, RoutedEventArgs e)
         {
             _carouselTimer.Stop();
-            CarouselOverlay.Visibility = Visibility.Collapsed;
+            await HideCarouselOverlayAsync();
         }
 
         private void CarouselOverlay_Tapped(object sender, TappedRoutedEventArgs e)
@@ -585,6 +718,10 @@ namespace CSD
             CarouselContentText.Text = item.Content;
             CarouselContentText.FontSize = carouselFontSize;
             CarouselProgressText.Text = $"{_carouselIndex + 1} / {_carouselItems.Count}";
+
+            AnimationHelper.AnimateEntrance(CarouselSubjectText, fromY: 10f, durationMs: 220);
+            AnimationHelper.AnimateEntrance(CarouselContentText, fromY: 18f, durationMs: 260, delayMs: 40);
+            AnimationHelper.AnimateEntrance(CarouselProgressText, fromY: 8f, durationMs: 200, delayMs: 80);
         }
 
         // ========== 未完成作业 ==========
@@ -632,8 +769,9 @@ namespace CSD
 
                 UndoneHomeworkPanel.Visibility = Visibility.Visible;
 
-                foreach (var (order, name) in undoneHomework)
+                for (int index = 0; index < undoneHomework.Count; index++)
                 {
+                    var (order, name) = undoneHomework[index];
                     var button = new Button
                     {
                         Content = $"#{order} {name}",
@@ -641,6 +779,8 @@ namespace CSD
                         MinWidth = 100
                     };
                     button.Click += UndoneHomeworkButton_Click;
+                    AnimationHelper.AttachHoverAnimation(button, 1.02f, 0.985f, -2f);
+                    AnimationHelper.AnimateEntrance(button, fromY: 10f, durationMs: 240, delayMs: Math.Min(index, 8) * 30);
                     UndoneHomeworkPanel.Children.Add(button);
                 }
             }
@@ -849,6 +989,28 @@ namespace CSD
             catch (JsonException)
             {
                 StatusText.Text = "学生列表数据格式错误。";
+            }
+        }
+
+        private void ShowCarouselOverlay()
+        {
+            _carouselOverlayAnimationToken++;
+            CarouselOverlay.Visibility = Visibility.Visible;
+            AnimationHelper.AnimateOpacity(CarouselOverlay, 0f, 1f, 180);
+            AnimationHelper.AnimateEntrance(CarouselContentPanel, fromY: 24f, durationMs: 280);
+            AnimationHelper.AnimateEntrance(ExitCarouselButton, fromY: 12f, durationMs: 220);
+        }
+
+        private async Task HideCarouselOverlayAsync()
+        {
+            _carouselOverlayAnimationToken++;
+            int animationToken = _carouselOverlayAnimationToken;
+            AnimationHelper.AnimateOpacity(CarouselOverlay, 1f, 0f, 160);
+            await Task.Delay(170);
+
+            if (animationToken == _carouselOverlayAnimationToken)
+            {
+                CarouselOverlay.Visibility = Visibility.Collapsed;
             }
         }
     }
