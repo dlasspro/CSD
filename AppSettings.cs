@@ -13,6 +13,15 @@ namespace CSD
         public static IDictionary<string, object> Values => Settings;
     }
 
+    /// <summary>与 Classworks KV 服务端约定的特殊键名（用于 GET/POST /kv/&lt;键名&gt;）。</summary>
+    internal static class ClassworksKvKeys
+    {
+        public const string SubjectConfig = "classworks-config-subject";
+
+        /// <summary>学生名单主数据，和云端名单管理共用同一个 KV 键名。</summary>
+        public const string RosterConfig = "classworks-list-main";
+    }
+
     internal sealed class SettingsDictionary : IDictionary<string, object>
     {
         private static readonly JsonSerializerOptions SerializerOptions = new()
