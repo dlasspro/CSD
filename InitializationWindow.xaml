@@ -13,40 +13,79 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Padding="32">
-        <StackPanel
-            Width="360"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Spacing="16">
-            <StackPanel.ChildrenTransitions>
-                <TransitionCollection>
-                    <EntranceThemeTransition IsStaggeringEnabled="True" />
-                    <RepositionThemeTransition />
-                </TransitionCollection>
-            </StackPanel.ChildrenTransitions>
-            <TextBlock
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid
+            x:Name="AppTitleBar"
+            Grid.Row="0"
+            MinHeight="52"
+            Padding="0,8,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="LeftInsetColumn" Width="0" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="RightInsetColumn" Width="0" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel
+                Grid.Column="1"
+                Margin="24,0,16,0"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Left"
+                Spacing="0">
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    Text="CSD" />
+                <TextBlock
+                    Margin="0,-1,0,0"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="初始化" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Padding="32">
+            <StackPanel
+                Width="360"
                 HorizontalAlignment="Center"
-                FontSize="24"
-                FontWeight="SemiBold"
-                Text="初始化" />
-            <TextBlock
-                HorizontalAlignment="Center"
-                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Text="请输入 KV授权令牌 以继续" />
-            <PasswordBox
-                x:Name="TokenBox"
-                Header="KV授权令牌"
-                PlaceholderText="输入 令牌" />
-            <Button
-                HorizontalAlignment="Stretch"
-                Click="ContinueButton_Click"
-                Content="继续" />
-            <Button
-                x:Name="TutorialButton"
-                HorizontalAlignment="Stretch"
-                Click="TutorialButton_Click"
-                Content="教程" />
-        </StackPanel>
+                VerticalAlignment="Center"
+                Spacing="16">
+                <StackPanel.ChildrenTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition IsStaggeringEnabled="True" />
+                        <RepositionThemeTransition />
+                    </TransitionCollection>
+                </StackPanel.ChildrenTransitions>
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    FontSize="24"
+                    FontWeight="SemiBold"
+                    Text="初始化" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="请输入 KV授权令牌 以继续" />
+                <PasswordBox
+                    x:Name="TokenBox"
+                    Header="KV授权令牌"
+                    PlaceholderText="输入 令牌" />
+                <Button
+                    HorizontalAlignment="Stretch"
+                    Tag="DisableHoverAnimation"
+                    Click="ContinueButton_Click"
+                    Content="继续" />
+                <Button
+                    x:Name="TutorialButton"
+                    HorizontalAlignment="Stretch"
+                    Tag="DisableHoverAnimation"
+                    Click="TutorialButton_Click"
+                    Content="教程" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>
