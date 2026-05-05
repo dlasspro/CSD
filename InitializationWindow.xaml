@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="CSD.InitializationWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:CSD"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="初始化">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid Padding="32">
+        <StackPanel
+            Width="360"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Spacing="16">
+            <TextBlock
+                HorizontalAlignment="Center"
+                FontSize="24"
+                FontWeight="SemiBold"
+                Text="初始化" />
+            <TextBlock
+                HorizontalAlignment="Center"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="请输入 KV授权令牌 以继续" />
+            <PasswordBox
+                x:Name="TokenBox"
+                Header="KV授权令牌"
+                PlaceholderText="输入 令牌" />
+            <Button
+                HorizontalAlignment="Stretch"
+                Click="ContinueButton_Click"
+                Content="继续" />
+        </StackPanel>
+    </Grid>
+</Window>
