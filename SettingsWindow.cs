@@ -203,10 +203,34 @@ namespace CSD
             Close();
         }
 
-        private void DestroyTokenButton_Click(object sender, RoutedEventArgs e)
+        private async void DestroyTokenButton_Click(object sender, RoutedEventArgs e)
         {
+            // 弹出确认对话框
+            var dialog = new ContentDialog
+            {
+                Title = "确认销毁 Token",
+                Content = "是否重新初始化并重启应用？",
+                PrimaryButtonText = "是",
+                CloseButtonText = "否",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = Content.XamlRoot
+            };
+            var result = await dialog.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            // 清除 Token
             AppSettings.Values.Remove(TokenKey);
-            _currentTokenText.Text = "未设置";
+
+            // 重启应用
+            var exePath = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(exePath))
+            {
+                System.Diagnostics.Process.Start(exePath);
+            }
+
+            // 退出当前应用
+            Application.Current.Exit();
         }
 
         private async void ExportButton_Click(object sender, RoutedEventArgs e)
