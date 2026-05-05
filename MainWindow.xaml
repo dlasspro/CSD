@@ -14,11 +14,48 @@
     </Window.SystemBackdrop>
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 融入窗口内容区的标题栏 -->
+        <Grid
+            x:Name="AppTitleBar"
+            Grid.Row="0"
+            MinHeight="52"
+            Padding="0,8,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="LeftInsetColumn" Width="0" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="RightInsetColumn" Width="0" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel
+                Grid.Column="1"
+                Margin="24,0,16,0"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Left"
+                Spacing="0">
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    Text="CSD" />
+                <TextBlock
+                    x:Name="StatusText"
+                    Margin="0,-1,0,0"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="正在加载今日作业..."
+                    TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Grid>
+
         <!-- 主内容 -->
-        <Grid Padding="24">
+        <Grid Grid.Row="1" Padding="24,12,24,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
@@ -37,16 +74,8 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- Row 1: 状态文字 -->
-            <TextBlock
-                x:Name="StatusText"
-                Grid.Row="1"
-                Margin="0,12,0,0"
-                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Text="正在加载今日作业..." />
-
-            <!-- Row 2: 底部导航栏（含空作业按钮） -->
-            <Grid Grid.Row="2" Margin="0,12,0,0">
+            <!-- Row 1: 底部导航栏（含空作业按钮） -->
+            <Grid Grid.Row="1" Margin="0,12,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />

@@ -58,6 +58,7 @@ namespace CSD
         public MainWindow()
         {
             InitializeComponent();
+            ConfigureIntegratedTitleBar();
 
             // 设置窗口标题栏图标
             try
@@ -85,6 +86,25 @@ namespace CSD
 
             UpdateDateDisplay();
             _ = LoadHomeworkAsync(_currentDate);
+        }
+
+        private void ConfigureIntegratedTitleBar()
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported())
+            {
+                return;
+            }
+
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            UpdateTitleBarLayout(AppWindow.TitleBar);
+        }
+
+        private void UpdateTitleBarLayout(AppWindowTitleBar titleBar)
+        {
+            LeftInsetColumn.Width = new GridLength(titleBar.LeftInset);
+            RightInsetColumn.Width = new GridLength(titleBar.RightInset);
         }
 
         private void RootContent_Loaded(object sender, RoutedEventArgs e)
