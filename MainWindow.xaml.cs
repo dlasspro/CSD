@@ -11,6 +11,7 @@ using System.Net.Http.Headers;
 using System.Numerics;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Graphics;
 
@@ -33,6 +34,7 @@ namespace CSD
         private const string DebugModeKey = "Settings_DebugMode";
 
         private readonly HttpClient _httpClient = new();
+        private int _loadingSequence = 0;
         private DateTime _currentDate = DateTime.Now;
         private string? _rawJson;
         private readonly DispatcherTimer _autoRefreshTimer = new();
@@ -275,6 +277,9 @@ namespace CSD
 
         private async Task LoadHomeworkAsync(DateTime date)
         {
+            // 增加版本号并记录当前版本
+            int currentSequence = ++_loadingSequence;
+
             _currentDate = date.Date;
             UpdateDateDisplay();
 
@@ -287,22 +292,28 @@ namespace CSD
             HomeworkContainer.Children.Clear();
 
             var responseBody = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{Uri.EscapeDataString(dateKey)}");
+            
+            // 如果已有更新的请求，放弃本次结果
+            if (currentSequence != _loadingSequence)
+                return;
+
             if (string.IsNullOrWhiteSpace(responseBody))
             {
-                // 没有作业数据时，清空当前作业科目集合并刷新未完成作业面板
                 _currentHomeworkSubjects.Clear();
-                await LoadUndoneHomeworkAsync();
+                await LoadUndoneHomeworkAsync(currentSequence);
                 return;
             }
 
             _rawJson = responseBody;
             ShowHomework(responseBody);
 
-            // 加载完成后，刷新未完成作业列表
-            await LoadUndoneHomeworkAsync();
+            if (currentSequence != _loadingSequence)
+                return;
+
+            await LoadUndoneHomeworkAsync(currentSequence);
         }
 
-        private async Task<string?> SendKvRequestAsync(HttpMethod method, string path, string? jsonBody = null)
+        private async Task<string?> SendKvRequestAsync(HttpMethod method, string path, string? jsonBody = null, CancellationToken cancellationToken = default)
         {
             var token = AppSettings.Values[TokenSettingsKey] as string;
             if (string.IsNullOrWhiteSpace(token))
@@ -321,7 +332,7 @@ namespace CSD
                     request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 }
 
-                using var response = await _httpClient.SendAsync(request);
+                using var response = await _httpClient.SendAsync(request, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 // 调试日志
@@ -760,12 +771,18 @@ namespace CSD
 
         // ========== 未完成作业 ==========
 
-        private async Task LoadUndoneHomeworkAsync()
+        private async Task LoadUndoneHomeworkAsync(int sequence)
         {
+            if (sequence != _loadingSequence)
+                return;
+
             UndoneHomeworkPanel.Children.Clear();
 
             // 获取全部作业列表
             var listResponse = await SendKvRequestAsync(HttpMethod.Get, "/kv/classworks-config-subject");
+            if (sequence != _loadingSequence)
+                return;
+
             if (string.IsNullOrWhiteSpace(listResponse))
             {
                 return;
@@ -795,6 +812,9 @@ namespace CSD
                     .Where(h => !_currentHomeworkSubjects.Contains(h.Name))
                     .ToList();
 
+                if (sequence != _loadingSequence)
+                    return;
+
                 // 始终显示科目按钮区域
                 UndoneHomeworkPanel.Visibility = Visibility.Visible;
 
@@ -819,6 +839,9 @@ namespace CSD
 
                 for (int index = 0; index < undoneHomework.Count; index++)
                 {
+                    if (sequence != _loadingSequence)
+                        return;
+
                     var (order, name) = undoneHomework[index];
                     var button = new Button
                     {
