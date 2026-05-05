@@ -231,7 +231,7 @@ namespace CSD
                 var data = new Dictionary<string, object>();
                 foreach (var kvp in settings)
                     data[kvp.Key] = kvp.Value ?? "";
-                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+                var json = JsonSerializer.Serialize(data, AppJsonIndentedSerializerContext.Default.DictionaryStringObject);
                 await FileIO.WriteTextAsync(file, json);
             }
         }
@@ -251,7 +251,7 @@ namespace CSD
                 try
                 {
                     var json = await FileIO.ReadTextAsync(file);
-                    var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+                    var data = JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.DictionaryStringJsonElement);
                     if (data == null) return;
 
                     var settings = AppSettings.Values;

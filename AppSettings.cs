@@ -15,11 +15,6 @@ namespace CSD
 
     internal sealed class SettingsDictionary : IDictionary<string, object>
     {
-        private static readonly JsonSerializerOptions SerializerOptions = new()
-        {
-            WriteIndented = true
-        };
-
         private readonly string _settingsFilePath;
         private readonly Dictionary<string, object> _settings;
         private readonly object _syncRoot = new();
@@ -207,7 +202,7 @@ namespace CSD
                     return new Dictionary<string, object>(StringComparer.Ordinal);
                 }
 
-                var rawData = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+                var rawData = JsonSerializer.Deserialize(json, AppJsonSerializerContext.Default.DictionaryStringJsonElement);
                 if (rawData is null)
                 {
                     return new Dictionary<string, object>(StringComparer.Ordinal);
@@ -231,7 +226,7 @@ namespace CSD
         {
             try
             {
-                var json = JsonSerializer.Serialize(_settings, SerializerOptions);
+                var json = JsonSerializer.Serialize(_settings, AppJsonIndentedSerializerContext.Default.DictionaryStringObject);
                 File.WriteAllText(_settingsFilePath, json);
             }
             catch

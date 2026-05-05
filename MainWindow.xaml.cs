@@ -637,7 +637,7 @@ namespace CSD
                     ["attendance"] = attendanceDict
                 };
 
-                var json = JsonSerializer.Serialize(payload);
+                var json = JsonSerializer.Serialize(payload, AppJsonSerializerContext.Default.DictionaryStringObject);
                 var dateKey = $"classworks-data-{_currentDate:yyyyMMdd}";
                 var response = await SendKvRequestAsync(HttpMethod.Post, $"/kv/{Uri.EscapeDataString(dateKey)}", json);
 
@@ -887,7 +887,7 @@ namespace CSD
                     ["attendance"] = attendanceDict
                 };
 
-                var json = JsonSerializer.Serialize(payload);
+                var json = JsonSerializer.Serialize(payload, AppJsonSerializerContext.Default.DictionaryStringObject);
                 var dateKey = $"classworks-data-{_currentDate:yyyyMMdd}";
                 var response = await SendKvRequestAsync(HttpMethod.Post, $"/kv/{Uri.EscapeDataString(dateKey)}", json);
 
