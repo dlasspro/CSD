@@ -289,6 +289,9 @@ namespace CSD
             var responseBody = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{Uri.EscapeDataString(dateKey)}");
             if (string.IsNullOrWhiteSpace(responseBody))
             {
+                // 没有作业数据时，清空当前作业科目集合并刷新未完成作业面板
+                _currentHomeworkSubjects.Clear();
+                await LoadUndoneHomeworkAsync();
                 return;
             }
 
@@ -296,7 +299,7 @@ namespace CSD
             ShowHomework(responseBody);
 
             // 加载完成后，刷新未完成作业列表
-            await LoadUndoneHomeworkAsync(responseBody);
+            await LoadUndoneHomeworkAsync();
         }
 
         private async Task<string?> SendKvRequestAsync(HttpMethod method, string path, string? jsonBody = null)
@@ -757,7 +760,7 @@ namespace CSD
 
         // ========== 未完成作业 ==========
 
-        private async Task LoadUndoneHomeworkAsync(string currentHomeworkJson)
+        private async Task LoadUndoneHomeworkAsync()
         {
             UndoneHomeworkPanel.Children.Clear();
 
@@ -792,13 +795,27 @@ namespace CSD
                     .Where(h => !_currentHomeworkSubjects.Contains(h.Name))
                     .ToList();
 
+                // 始终显示科目按钮区域
+                UndoneHomeworkPanel.Visibility = Visibility.Visible;
+
                 if (undoneHomework.Count == 0)
                 {
-                    UndoneHomeworkPanel.Visibility = Visibility.Collapsed;
+                    // 添加一个提示按钮
+                    var placeholderButton = new Button
+                    {
+                        Content = "所有科目均已布置作业",
+                        Tag = "no_undone",
+                        MinWidth = 100
+                    };
+                    placeholderButton.Click += (s, e) =>
+                    {
+                        System.Diagnostics.Debug.WriteLine("所有科目已完成，暂无补做作业");
+                    };
+                    AnimationHelper.AttachHoverAnimation(placeholderButton, 1.02f, 0.985f, -2f);
+                    AnimationHelper.AnimateEntrance(placeholderButton, fromY: 10f, durationMs: 240);
+                    UndoneHomeworkPanel.Children.Add(placeholderButton);
                     return;
                 }
-
-                UndoneHomeworkPanel.Visibility = Visibility.Visible;
 
                 for (int index = 0; index < undoneHomework.Count; index++)
                 {
