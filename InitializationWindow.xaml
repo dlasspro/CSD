@@ -42,6 +42,11 @@
                 HorizontalAlignment="Stretch"
                 Click="ContinueButton_Click"
                 Content="继续" />
+            <Button
+                x:Name="TutorialButton"
+                HorizontalAlignment="Stretch"
+                Click="TutorialButton_Click"
+                Content="教程" />
         </StackPanel>
     </Grid>
 </Window>

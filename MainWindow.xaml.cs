@@ -326,7 +326,18 @@ namespace CSD
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    StatusText.Text = $"请求失败 ({(int)response.StatusCode})";
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound && path.StartsWith("/kv/classworks-data-", StringComparison.OrdinalIgnoreCase))
+                    {
+                        StatusText.Text = "当天没有作业，请点击按钮布置";
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        StatusText.Text = "token配置错误，请去设置销毁重设";
+                    }
+                    else
+                    {
+                        StatusText.Text = $"请求失败 ({(int)response.StatusCode})";
+                    }
                     return null;
                 }
 
