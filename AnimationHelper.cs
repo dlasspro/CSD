@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Numerics;
 
@@ -57,6 +58,119 @@ namespace CSD
             opacityAnimation.Target = "Opacity";
 
             visual.StartAnimation("Opacity", opacityAnimation);
+        }
+
+        public static void AnimateToOpacity(UIElement element, float toOpacity, double durationMs = 220)
+        {
+            if (element.XamlRoot is null && element is FrameworkElement frameworkElement)
+            {
+                RoutedEventHandler? loadedHandler = null;
+                loadedHandler = (_, _) =>
+                {
+                    frameworkElement.Loaded -= loadedHandler;
+                    AnimateToOpacity(element, toOpacity, durationMs);
+                };
+                frameworkElement.Loaded += loadedHandler;
+                return;
+            }
+
+            var visual = ElementCompositionPreview.GetElementVisual(element);
+            var compositor = visual.Compositor;
+            var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.16f, 1f), new Vector2(0.3f, 1f));
+
+            var opacityAnimation = compositor.CreateScalarKeyFrameAnimation();
+            opacityAnimation.InsertKeyFrame(1f, toOpacity, easing);
+            opacityAnimation.Duration = TimeSpan.FromMilliseconds(durationMs);
+            opacityAnimation.Target = "Opacity";
+
+            visual.StartAnimation("Opacity", opacityAnimation);
+        }
+
+        public static void AnimateOffsetY(UIElement element, float toY, double durationMs = 240, float overshoot = 4f)
+        {
+            if (element.XamlRoot is null && element is FrameworkElement frameworkElement)
+            {
+                RoutedEventHandler? loadedHandler = null;
+                loadedHandler = (_, _) =>
+                {
+                    frameworkElement.Loaded -= loadedHandler;
+                    AnimateOffsetY(element, toY, durationMs, overshoot);
+                };
+                frameworkElement.Loaded += loadedHandler;
+                return;
+            }
+
+            var visual = ElementCompositionPreview.GetElementVisual(element);
+            var compositor = visual.Compositor;
+            var currentOffset = visual.Offset;
+            var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.18f, 0.95f), new Vector2(0.24f, 1f));
+
+            var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
+            if (Math.Abs(toY - currentOffset.Y) > 0.5f)
+            {
+                float overshootY = toY + (toY > currentOffset.Y ? overshoot : -overshoot);
+                offsetAnimation.InsertKeyFrame(0.82f, new Vector3(currentOffset.X, overshootY, currentOffset.Z), easing);
+            }
+            offsetAnimation.InsertKeyFrame(1f, new Vector3(currentOffset.X, toY, currentOffset.Z), easing);
+            offsetAnimation.Duration = TimeSpan.FromMilliseconds(durationMs);
+            offsetAnimation.Target = "Offset";
+
+            visual.StartAnimation("Offset", offsetAnimation);
+        }
+
+        public static void AnimateScaleTo(UIElement element, float toScale, double durationMs = 220, float overshoot = 0.02f)
+        {
+            if (element.XamlRoot is null && element is FrameworkElement frameworkElement)
+            {
+                RoutedEventHandler? loadedHandler = null;
+                loadedHandler = (_, _) =>
+                {
+                    frameworkElement.Loaded -= loadedHandler;
+                    AnimateScaleTo(element, toScale, durationMs, overshoot);
+                };
+                frameworkElement.Loaded += loadedHandler;
+                return;
+            }
+
+            EnsureCenterPoint(element);
+
+            var visual = ElementCompositionPreview.GetElementVisual(element);
+            var compositor = visual.Compositor;
+            var currentScale = visual.Scale;
+            if (currentScale == Vector3.Zero)
+            {
+                currentScale = new Vector3(1f, 1f, 1f);
+                visual.Scale = currentScale;
+            }
+
+            var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.18f, 0.95f), new Vector2(0.24f, 1f));
+            var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
+            if (overshoot > 0)
+            {
+                scaleAnimation.InsertKeyFrame(0.7f, new Vector3(toScale + overshoot, toScale + overshoot, 1f), easing);
+            }
+            scaleAnimation.InsertKeyFrame(1f, new Vector3(toScale, toScale, 1f), easing);
+            scaleAnimation.Duration = TimeSpan.FromMilliseconds(durationMs);
+            scaleAnimation.Target = "Scale";
+
+            visual.StartAnimation("Scale", scaleAnimation);
+        }
+
+        public static void AnimateBrushColor(SolidColorBrush brush, Windows.UI.Color toColor, double durationMs = 220)
+        {
+            var animation = new ColorAnimation
+            {
+                To = toColor,
+                Duration = TimeSpan.FromMilliseconds(durationMs),
+                EnableDependentAnimation = true,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            var storyboard = new Storyboard();
+            storyboard.Children.Add(animation);
+            Storyboard.SetTarget(animation, brush);
+            Storyboard.SetTargetProperty(animation, "Color");
+            storyboard.Begin();
         }
 
         public static void ApplyStandardInteractions(DependencyObject root)

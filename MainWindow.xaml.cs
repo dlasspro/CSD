@@ -188,7 +188,15 @@ namespace CSD
 
         private void AutoRefreshTimer_Tick(object? sender, object e)
         {
-            _ = LoadHomeworkAsync(_currentDate);
+            _ = RefreshAllGlobalComponentsAsync();
+        }
+
+        /// <summary>
+        /// 自动刷新与手动刷新共用：重新拉取当前日作业并更新主界面相关区域（含未完成列表等）。
+        /// </summary>
+        private async Task RefreshAllGlobalComponentsAsync()
+        {
+            await LoadHomeworkAsync(_currentDate);
         }
 
         private async void RefreshHomeworkButton_Click(object sender, RoutedEventArgs e)
@@ -201,7 +209,7 @@ namespace CSD
             var settingsWindow = new SettingsWindow(() =>
             {
                 RestartAutoRefreshTimer();
-                _ = LoadHomeworkAsync(_currentDate);
+                _ = RefreshAllGlobalComponentsAsync();
 
                 // 如果关闭了调试模式，关闭调试窗口
                 if (!DebugWindow.IsDebugModeEnabled() && _debugWindow != null)
@@ -779,10 +787,7 @@ namespace CSD
             UndoneHomeworkPanel.Children.Clear();
 
             // 获取全部作业列表
-            var listResponse = await SendKvRequestAsync(HttpMethod.Get, "/kv/classworks-config-subject");
-            if (sequence != _loadingSequence)
-                return;
-
+            var listResponse = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{ClassworksKvKeys.SubjectConfig}");
             if (string.IsNullOrWhiteSpace(listResponse))
             {
                 return;
