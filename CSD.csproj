@@ -4,6 +4,7 @@
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>CSD</RootNamespace>
+    <ApplicationIcon>icons\Classworks.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
@@ -24,11 +25,17 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="icons\Classworks.ico" />
     <Content Include="icons\ic_device_matebook.ico" />
+    <Content Include="icons\ic_device_matebook.png" />
     <Content Include="icons\ic_gallery_cloud_synchronization.ico" />
+    <Content Include="icons\ic_gallery_cloud_synchronization.png" />
     <Content Include="icons\ic_public_folder.ico" />
+    <Content Include="icons\ic_public_folder.png" />
     <Content Include="icons\ic_public_refresh.ico" />
+    <Content Include="icons\ic_public_refresh.png" />
     <Content Include="icons\ic_statusbar_alarm.ico" />
+    <Content Include="icons\ic_statusbar_alarm.png" />
   </ItemGroup>
 
   <ItemGroup>
