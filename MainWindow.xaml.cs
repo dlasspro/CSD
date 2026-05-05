@@ -39,11 +39,8 @@ namespace CSD
         private string? _rawJson;
         private readonly DispatcherTimer _autoRefreshTimer = new();
         private List<HomeworkItem> _carouselItems = new();
-        private int _carouselIndex = 0;
-        private readonly DispatcherTimer _carouselTimer = new();
         private DebugWindow? _debugWindow;
         private bool _isUpdatingCalendarSelection;
-        private int _carouselOverlayAnimationToken;
 
         // 当前作业的科目名称集合（用于判断未完成作业）
         private HashSet<string> _currentHomeworkSubjects = new();
@@ -429,8 +426,6 @@ namespace CSD
 
                 // 更新轮播数据，退出轮播模式
                 _carouselItems = items;
-                _carouselTimer.Stop();
-                CarouselOverlay.Visibility = Visibility.Collapsed;
 
                 if (items.Count == 0) return;
 
@@ -709,73 +704,54 @@ namespace CSD
         // ========== 轮播功能 ==========
 
         private void ToggleCarouselButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_carouselItems.Count == 0)
-            {
-                StatusText.Text = "暂无作业可供轮播。";
-                return;
-            }
 
-            _carouselIndex = 0;
-            ShowCarouselItem();
-            StartCarouselTimer();
-            ShowCarouselOverlay();
-        }
+                {
 
-        private async void ExitCarouselButton_Click(object sender, RoutedEventArgs e)
-        {
-            _carouselTimer.Stop();
-            await HideCarouselOverlayAsync();
-        }
+                    if (_carouselItems.Count == 0)
 
-        private void CarouselOverlay_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            // 点击内容切换到下一项
-            if (_carouselItems.Count > 0)
-            {
-                _carouselIndex = (_carouselIndex + 1) % _carouselItems.Count;
-                ShowCarouselItem();
-            }
-        }
+                    {
 
-        private void StartCarouselTimer()
-        {
-            _carouselTimer.Stop();
-            var settings = AppSettings.Values;
-            double interval = (double)(settings[CarouselIntervalKey] ?? 5.0);
-            _carouselTimer.Interval = TimeSpan.FromSeconds(interval);
-            _carouselTimer.Tick -= CarouselTimer_Tick;
-            _carouselTimer.Tick += CarouselTimer_Tick;
-            _carouselTimer.Start();
-        }
+                        StatusText.Text = "暂无作业可供轮播。";
 
-        private void CarouselTimer_Tick(object? sender, object e)
-        {
-            if (_carouselItems.Count > 0)
-            {
-                _carouselIndex = (_carouselIndex + 1) % _carouselItems.Count;
-                ShowCarouselItem();
-            }
-        }
+                        return;
 
-        private void ShowCarouselItem()
-        {
-            if (_carouselItems.Count == 0) return;
+                    }
 
-            var item = _carouselItems[_carouselIndex];
-            var settings = AppSettings.Values;
-            double carouselFontSize = (double)(settings[CarouselFontSizeKey] ?? 48.0);
+        
 
-            CarouselSubjectText.Text = item.Subject;
-            CarouselSubjectText.FontSize = Math.Min(carouselFontSize * 1.3, 96);
-            CarouselContentText.Text = item.Content;
-            CarouselContentText.FontSize = carouselFontSize;
-            CarouselProgressText.Text = $"{_carouselIndex + 1} / {_carouselItems.Count}";
+                    var carouselWindow = new CarouselWindow(_carouselItems);
 
-            AnimationHelper.AnimateEntrance(CarouselSubjectText, fromY: 10f, durationMs: 220);
-            AnimationHelper.AnimateEntrance(CarouselContentText, fromY: 18f, durationMs: 260, delayMs: 40);
-            AnimationHelper.AnimateEntrance(CarouselProgressText, fromY: 8f, durationMs: 200, delayMs: 80);
-        }
+                    carouselWindow.OnExitCarousel = () =>
+
+                    {
+
+                        // 退出轮播时重新打开主窗口
+
+                        var mainWindow = new MainWindow();
+
+                        mainWindow.Activate();
+
+                    };
+
+        
+
+                    // 保存窗口状态后再关闭
+
+                    SaveWindowState();
+
+                    carouselWindow.Activate();
+
+                    this.Close();
+
+                }
+
+        
+
+        
+
+        
+
+        
 
         // ========== 未完成作业 ==========
 
@@ -1068,26 +1044,6 @@ namespace CSD
             }
         }
 
-        private void ShowCarouselOverlay()
-        {
-            _carouselOverlayAnimationToken++;
-            CarouselOverlay.Visibility = Visibility.Visible;
-            AnimationHelper.AnimateOpacity(CarouselOverlay, 0f, 1f, 180);
-            AnimationHelper.AnimateEntrance(CarouselContentPanel, fromY: 24f, durationMs: 280);
-            AnimationHelper.AnimateEntrance(ExitCarouselButton, fromY: 12f, durationMs: 220);
         }
 
-        private async Task HideCarouselOverlayAsync()
-        {
-            _carouselOverlayAnimationToken++;
-            int animationToken = _carouselOverlayAnimationToken;
-            AnimationHelper.AnimateOpacity(CarouselOverlay, 1f, 0f, 160);
-            await Task.Delay(170);
-
-            if (animationToken == _carouselOverlayAnimationToken)
-            {
-                CarouselOverlay.Visibility = Visibility.Collapsed;
-            }
         }
-    }
-}

@@ -205,66 +205,6 @@
             </Grid>
         </Grid>
 
-        <!-- 轮播覆盖层 -->
-        <Grid
-            x:Name="CarouselOverlay"
-            Visibility="Collapsed"
-            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
-            Tapped="CarouselOverlay_Tapped">
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <!-- 底部退出按钮 -->
-            <Button
-                x:Name="ExitCarouselButton"
-                Grid.Row="2"
-                Content="✕ 退出轮播"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
-                Margin="0,0,16,16"
-                Click="ExitCarouselButton_Click" />
-
-            <!-- 轮播内容 -->
-            <ScrollViewer
-                Grid.Row="1"
-                VerticalAlignment="Center"
-                HorizontalContentAlignment="Center"
-                VerticalScrollBarVisibility="Auto"
-                HorizontalScrollBarVisibility="Disabled">
-                <StackPanel
-                    x:Name="CarouselContentPanel"
-                    Spacing="32"
-                    Padding="48">
-                    <StackPanel.ChildrenTransitions>
-                        <TransitionCollection>
-                            <EntranceThemeTransition IsStaggeringEnabled="True" />
-                            <RepositionThemeTransition />
-                        </TransitionCollection>
-                    </StackPanel.ChildrenTransitions>
-                    <TextBlock
-                        x:Name="CarouselSubjectText"
-                        TextWrapping="WrapWholeWords"
-                        TextAlignment="Center"
-                        FontWeight="SemiBold" />
-                    <TextBlock
-                        x:Name="CarouselContentText"
-                        TextWrapping="WrapWholeWords"
-                        TextAlignment="Center" />
-                </StackPanel>
-            </ScrollViewer>
-
-            <!-- 底部进度 -->
-            <TextBlock
-                x:Name="CarouselProgressText"
-                Grid.Row="2"
-                TextAlignment="Center"
-                Margin="0,0,0,24"
-                FontSize="16"
-                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-        </Grid>
+        
     </Grid>
 </Window>
