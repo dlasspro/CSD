@@ -20,6 +20,9 @@ namespace CSD
 
         /// <summary>学生名单主数据，和云端名单管理共用同一个 KV 键名。</summary>
         public const string RosterConfig = "classworks-list-main";
+
+        /// <summary>编辑偏好配置键名。</summary>
+        public const string EditConfig = "classworks-config-edit";
     }
 
     internal sealed class SettingsDictionary : IDictionary<string, object>
