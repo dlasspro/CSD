@@ -273,7 +273,7 @@ namespace CSD
                 inputBoxes[^1].Focus(FocusState.Programmatic);
             };
             
-            // 组装界面
+            // 组装界面（预览在上，输入框在下）
             var panel = new StackPanel
             {
                 Width = 640,
@@ -283,8 +283,21 @@ namespace CSD
             
             panel.Children.Add(new TextBlock
             {
-                Text = "每行一条内容，回车添加新行：",
+                Text = "预览：",
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+            });
+            panel.Children.Add(new ScrollViewer
+            {
+                Content = previewBorder,
+                MaxHeight = 180,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            });
+            
+            panel.Children.Add(new TextBlock
+            {
+                Text = "每行一条内容，回车添加新行：",
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Margin = new Thickness(0, 4, 0, 0)
             });
             
             var scrollViewer = new ScrollViewer
@@ -295,19 +308,6 @@ namespace CSD
             };
             panel.Children.Add(scrollViewer);
             panel.Children.Add(addLineBtn);
-            
-            panel.Children.Add(new TextBlock
-            {
-                Text = "预览：",
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Margin = new Thickness(0, 8, 0, 0)
-            });
-            panel.Children.Add(new ScrollViewer
-            {
-                Content = previewBorder,
-                MaxHeight = 180,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-            });
             
             var dialog = new ContentDialog
             {
@@ -417,6 +417,12 @@ namespace CSD
         /// </summary>
         private async Task RefreshAllGlobalComponentsAsync()
         {
+            // 如果已有缓存数据，先用缓存重新渲染（确保字体大小等设置立即生效）
+            if (!string.IsNullOrWhiteSpace(_rawJson))
+            {
+                ShowHomework(_rawJson);
+            }
+            // 再从服务器拉取最新数据
             await LoadHomeworkAsync(_currentDate);
         }
 
@@ -655,8 +661,8 @@ namespace CSD
                 var settings = AppSettings.Values;
                 double minCardWidth = (double)(settings["Settings_MinCardWidth"] ?? 220.0);
                 double gap = (double)(settings["Settings_CardGap"] ?? 14.0);
-                double subjectFontSize = (double)(settings["Settings_SubjectFontSize"] ?? 22.0);
-                double contentFontSize = (double)(settings["Settings_ContentFontSize"] ?? 17.0);
+                double subjectFontSize = (double)(settings["Settings_SubjectFontSize"] ?? 26.0);
+                double contentFontSize = (double)(settings["Settings_ContentFontSize"] ?? 20.0);
 
                 // 按可用宽度与内容长度分行，保证同排等高且偏宽内容能换到下一行
                 double availableWidth = HomeworkContainer.ActualWidth;

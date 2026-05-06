@@ -126,10 +126,10 @@ namespace CSD
             _cardGapBox.Value = (double)(settings[CardGapKey] ?? 14.0);
 
             // --- 文字大小 ---
-            _subjectFontSizeBox = CreateNumberBoxWithoutHeader(10, 48, 1, 22);
-            _subjectFontSizeBox.Value = (double)(settings[SubjectFontSizeKey] ?? 22.0);
-            _contentFontSizeBox = CreateNumberBoxWithoutHeader(8, 36, 1, 17);
-            _contentFontSizeBox.Value = (double)(settings[ContentFontSizeKey] ?? 17.0);
+            _subjectFontSizeBox = CreateNumberBoxWithoutHeader(10, 48, 1, 26);
+            _subjectFontSizeBox.Value = (double)(settings[SubjectFontSizeKey] ?? 26.0);
+            _contentFontSizeBox = CreateNumberBoxWithoutHeader(8, 36, 1, 20);
+            _contentFontSizeBox.Value = (double)(settings[ContentFontSizeKey] ?? 20.0);
 
             // --- 服务器地址 ---
             _serverUrlBox = new TextBox
@@ -2741,8 +2741,8 @@ namespace CSD
                     _isAutoSaveSuspended = true;
                     _minCardWidthBox.Value = (double)(settings[MinCardWidthKey] ?? 220.0);
                     _cardGapBox.Value = (double)(settings[CardGapKey] ?? 14.0);
-                    _subjectFontSizeBox.Value = (double)(settings[SubjectFontSizeKey] ?? 22.0);
-                    _contentFontSizeBox.Value = (double)(settings[ContentFontSizeKey] ?? 17.0);
+                    _subjectFontSizeBox.Value = (double)(settings[SubjectFontSizeKey] ?? 26.0);
+                    _contentFontSizeBox.Value = (double)(settings[ContentFontSizeKey] ?? 20.0);
                     _serverUrlBox.Text = settings[ServerUrlKey] as string ?? "https://kv-service.wuyuan.dev";
                     _autoRefreshToggle.IsOn = settings.ContainsKey(AutoRefreshEnabledKey) ? (bool)(settings[AutoRefreshEnabledKey] ?? false) : false;
                     _autoRefreshIntervalBox.Value = (double)(settings[AutoRefreshIntervalKey] ?? 60.0);

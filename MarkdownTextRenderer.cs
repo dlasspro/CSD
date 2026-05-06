@@ -177,7 +177,8 @@ namespace CSD
             var richTextBlock = new RichTextBlock
             {
                 TextWrapping = TextWrapping.WrapWholeWords,
-                IsTextSelectionEnabled = false
+                IsTextSelectionEnabled = false,
+                FontSize = fontSize
             };
 
             if (foreground is not null)
