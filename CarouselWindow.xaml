@@ -46,12 +46,11 @@
                         CornerRadius="1"
                         HorizontalAlignment="Center"
                         Width="120" />
-                    <!-- 作业内容 -->
-                    <TextBlock x:Name="CarouselContentText"
-                        TextWrapping="WrapWholeWords"
-                        TextAlignment="Center"
+                    <!-- 作业内容（使用 ContentControl 承载 RichTextBlock） -->
+                    <ContentControl x:Name="CarouselContentHost"
                         HorizontalAlignment="Center"
-                        LineHeight="1.6" />
+                        HorizontalContentAlignment="Center"
+                        IsTabStop="False" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>

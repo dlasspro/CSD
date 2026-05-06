@@ -41,6 +41,7 @@ namespace CSD
         private List<HomeworkItem> _carouselItems = new();
         private DebugWindow? _debugWindow;
         private bool _isUpdatingCalendarSelection;
+        private bool _isContentDialogOpen;
 
         // 当前作业的科目名称集合（用于判断未完成作业）
         private HashSet<string> _currentHomeworkSubjects = new();
@@ -114,6 +115,229 @@ namespace CSD
                 AnimationHelper.AnimateEntrance(rootContent, fromY: 16f, durationMs: 380);
                 AnimationHelper.ApplyStandardInteractions(rootContent);
             }
+        }
+
+        private async Task<ContentDialogResult?> ShowContentDialogSafelyAsync(ContentDialog dialog)
+        {
+            if (_isContentDialogOpen)
+            {
+                return null;
+            }
+
+            _isContentDialogOpen = true;
+            try
+            {
+                return await dialog.ShowAsync();
+            }
+            finally
+            {
+                _isContentDialogOpen = false;
+            }
+        }
+
+        /// <summary>
+        /// 显示作业编辑器对话框（多输入框模式）
+        /// </summary>
+        private async Task<string?> ShowHomeworkEditorDialogAsync(string title, string initialText, XamlRoot xamlRoot)
+        {
+            // 解析初始文本为多行
+            var lines = ParseLines(initialText);
+            
+            // 输入框容器
+            var linesPanel = new StackPanel { Spacing = 8 };
+            var inputBoxes = new List<TextBox>();
+            
+            // 预览区域（提前创建以便引用）
+            var previewBorder = new Border
+            {
+                Padding = new Thickness(12),
+                Background = (Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"],
+                CornerRadius = new CornerRadius(8),
+                MinHeight = 60
+            };
+            
+            // 更新预览
+            void RefreshPreview()
+            {
+                var content = GetContent();
+                try
+                {
+                    previewBorder.Child = MarkdownTextRenderer.CreateRichTextBlock(
+                        content,
+                        15,
+                        (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]);
+                }
+                catch
+                {
+                    previewBorder.Child = new TextBlock { Text = content, TextWrapping = TextWrapping.Wrap };
+                }
+            }
+            
+            // 添加一行输入框（在指定位置插入）
+            void AddLine(string text = "", int insertIndex = -1)
+            {
+                var box = new TextBox
+                {
+                    Text = text,
+                    PlaceholderText = "输入内容...",
+                    FontSize = 14,
+                    Padding = new Thickness(8, 6, 8, 6),
+                    HorizontalAlignment = HorizontalAlignment.Stretch
+                };
+                
+                // 文本变化时更新预览
+                box.TextChanged += (_, _) => RefreshPreview();
+                
+                // 回车：在当前行下方插入新行并聚焦
+                box.KeyDown += (s, e) =>
+                {
+                    if (e.Key == Windows.System.VirtualKey.Enter)
+                    {
+                        e.Handled = true;
+                        var index = inputBoxes.IndexOf(box);
+                        AddLine("", index + 1); // 在当前行下方插入
+                        inputBoxes[index + 1].Focus(FocusState.Programmatic);
+                    }
+                    // 退格：空行时删除当前行，聚焦到上一行末尾
+                    else if (e.Key == Windows.System.VirtualKey.Back)
+                    {
+                        var index = inputBoxes.IndexOf(box);
+                        // 只有当前行为空且不是第一行时才删除
+                        if (string.IsNullOrEmpty(box.Text) && index > 0)
+                        {
+                            e.Handled = true;
+                            var prevBox = inputBoxes[index - 1];
+                            
+                            // 移除当前行
+                            linesPanel.Children.RemoveAt(index);
+                            inputBoxes.RemoveAt(index);
+                            
+                            // 聚焦到上一行末尾
+                            prevBox.Focus(FocusState.Programmatic);
+                            prevBox.SelectionStart = prevBox.Text.Length;
+                            RefreshPreview();
+                        }
+                    }
+                };
+                
+                // 插入到指定位置或末尾
+                if (insertIndex >= 0 && insertIndex < inputBoxes.Count)
+                {
+                    inputBoxes.Insert(insertIndex, box);
+                    linesPanel.Children.Insert(insertIndex, box);
+                }
+                else
+                {
+                    inputBoxes.Add(box);
+                    linesPanel.Children.Add(box);
+                }
+            }
+            
+            // 获取所有行内容
+            string GetContent()
+            {
+                var nonEmptyLines = inputBoxes
+                    .Select(b => b.Text.Trim())
+                    .Where(t => !string.IsNullOrEmpty(t))
+                    .ToList();
+                return string.Join("\n", nonEmptyLines);
+            }
+            
+            // 初始化输入框
+            if (lines.Count == 0 || (lines.Count == 1 && string.IsNullOrEmpty(lines[0])))
+            {
+                AddLine("");
+            }
+            else
+            {
+                foreach (var line in lines)
+                {
+                    AddLine(line);
+                }
+            }
+            
+            // 初始预览
+            RefreshPreview();
+            
+            // 添加按钮
+            var addLineBtn = new Button
+            {
+                Content = "+ 添加新行",
+                FontSize = 13,
+                Padding = new Thickness(12, 6, 12, 6),
+                Margin = new Thickness(0, 4, 0, 0)
+            };
+            addLineBtn.Click += (s, e) =>
+            {
+                AddLine(""); // 添加到末尾
+                inputBoxes[^1].Focus(FocusState.Programmatic);
+            };
+            
+            // 组装界面
+            var panel = new StackPanel
+            {
+                Width = 640,
+                Spacing = 10,
+                Padding = new Thickness(4)
+            };
+            
+            panel.Children.Add(new TextBlock
+            {
+                Text = "每行一条内容，回车添加新行：",
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+            });
+            
+            var scrollViewer = new ScrollViewer
+            {
+                Content = linesPanel,
+                MaxHeight = 280,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+            panel.Children.Add(scrollViewer);
+            panel.Children.Add(addLineBtn);
+            
+            panel.Children.Add(new TextBlock
+            {
+                Text = "预览：",
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                Margin = new Thickness(0, 8, 0, 0)
+            });
+            panel.Children.Add(new ScrollViewer
+            {
+                Content = previewBorder,
+                MaxHeight = 180,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            });
+            
+            var dialog = new ContentDialog
+            {
+                Title = title,
+                Content = panel,
+                PrimaryButtonText = "保存",
+                CloseButtonText = "取消",
+                XamlRoot = xamlRoot,
+                DefaultButton = ContentDialogButton.Primary
+            };
+            
+            var result = await ShowContentDialogSafelyAsync(dialog);
+            
+            if (result != ContentDialogResult.Primary)
+                return null;
+            
+            return GetContent();
+        }
+        
+        /// <summary>
+        /// 解析文本为多行
+        /// </summary>
+        private static List<string> ParseLines(string? text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return new List<string>();
+            
+            // 统一换行符
+            var normalized = text.Replace("\r\n", "\n").Replace("\r", "\n");
+            return normalized.Split('\n').ToList();
         }
 
         private void RestoreWindowState()
@@ -405,9 +629,7 @@ namespace CSD
                 _currentHomeworkSubjects.Clear();
                 foreach (var subject in homework.EnumerateObject())
                 {
-                    var content = subject.Value.ValueKind == JsonValueKind.Object && subject.Value.TryGetProperty("content", out var contentElement)
-                        ? contentElement.GetString()
-                        : subject.Value.ToString();
+                    var content = GetNormalizedHomeworkContent(subject.Value);
 
                     // 内容为空时不显示为卡片
                     if (string.IsNullOrWhiteSpace(content))
@@ -477,6 +699,28 @@ namespace CSD
             }
         }
 
+        private static string GetNormalizedHomeworkContent(JsonElement element)
+        {
+            string? content = null;
+
+            if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty("content", out var contentElement))
+            {
+                content = contentElement.ValueKind == JsonValueKind.String
+                    ? contentElement.GetString()
+                    : contentElement.ToString();
+            }
+            else if (element.ValueKind == JsonValueKind.String)
+            {
+                content = element.GetString();
+            }
+            else
+            {
+                content = element.ToString();
+            }
+
+            return MarkdownTextRenderer.NormalizeStorageText(content);
+        }
+
         private static List<List<HomeworkItem>> BuildCardRows(
             List<HomeworkItem> items,
             double availableWidth,
@@ -521,7 +765,7 @@ namespace CSD
 
         private static double EstimateCardWidth(HomeworkItem item, double minCardWidth, double availableWidth, double contentFontSize)
         {
-            int longestLineLength = item.Content
+            int longestLineLength = MarkdownTextRenderer.GetPlainText(item.Content)
                 .Split('\n')
                 .Select(line => line.Trim().Length)
                 .DefaultIfEmpty(0)
@@ -558,13 +802,10 @@ namespace CSD
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Text = item.Subject
             });
-            stack.Children.Add(new TextBlock
-            {
-                FontSize = contentFontSize,
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-                Text = item.Content,
-                TextWrapping = TextWrapping.WrapWholeWords
-            });
+            stack.Children.Add(MarkdownTextRenderer.CreateRichTextBlock(
+                item.Content,
+                contentFontSize,
+                (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
 
             border.Child = stack;
 
@@ -590,29 +831,14 @@ namespace CSD
             if (sender is not Button button || button.Tag is not HomeworkItem item)
                 return;
 
-            var editBox = new TextBox
-            {
-                Text = item.Content,
-                AcceptsReturn = true,
-                TextWrapping = TextWrapping.Wrap,
-                Height = 300,
-                PlaceholderText = "修改作业内容..."
-            };
+            var editedText = await ShowHomeworkEditorDialogAsync(
+                $"修改 {item.Subject} 作业",
+                item.Content,
+                button.XamlRoot);
 
-            var dialog = new ContentDialog
+            if (editedText is not null)
             {
-                Title = $"修改 {item.Subject} 作业",
-                Content = editBox,
-                PrimaryButtonText = "保存",
-                CloseButtonText = "取消",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = button.XamlRoot
-            };
-
-            var result = await dialog.ShowAsync();
-            if (result == ContentDialogResult.Primary)
-            {
-                await SaveHomeworkAsync(item.Subject, editBox.Text);
+                await SaveHomeworkAsync(item.Subject, editedText);
             }
         }
 
@@ -636,7 +862,7 @@ namespace CSD
                     {
                         if (subj.Name == subject)
                         {
-                            homeworkDict[subj.Name] = new Dictionary<string, object> { ["content"] = newContent };
+                            homeworkDict[subj.Name] = new Dictionary<string, object> { ["content"] = MarkdownTextRenderer.NormalizeStorageText(newContent) };
                         }
                         else
                         {
@@ -847,33 +1073,13 @@ namespace CSD
             if (sender is not Button button || button.Tag is not string homeworkName)
                 return;
 
-            var xamlRoot = button.XamlRoot;
+            var newContent = await ShowHomeworkEditorDialogAsync(
+                $"添加 {homeworkName} 作业",
+                string.Empty,
+                button.XamlRoot);
 
-            // 弹出编辑对话框，和正常修改作业流一致
-            var editBox = new TextBox
-            {
-                Text = "",
-                AcceptsReturn = true,
-                TextWrapping = TextWrapping.Wrap,
-                Height = 300,
-                PlaceholderText = "输入作业内容..."
-            };
-
-            var dialog = new ContentDialog
-            {
-                Title = $"添加 {homeworkName} 作业",
-                Content = editBox,
-                PrimaryButtonText = "保存",
-                CloseButtonText = "取消",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = xamlRoot
-            };
-
-            var result = await dialog.ShowAsync();
-            if (result != ContentDialogResult.Primary)
+            if (newContent is null)
                 return;
-
-            var newContent = editBox.Text;
 
             // 构建新的 homework 对象
             try
@@ -907,7 +1113,7 @@ namespace CSD
                 }
 
                 // 添加新作业
-                homeworkDict[homeworkName] = new Dictionary<string, object> { ["content"] = newContent };
+                homeworkDict[homeworkName] = new Dictionary<string, object> { ["content"] = MarkdownTextRenderer.NormalizeStorageText(newContent) };
 
                 // 构建 attendance 对象
                 var attendanceDict = new Dictionary<string, object>();
@@ -1032,7 +1238,7 @@ namespace CSD
                         XamlRoot = xamlRoot
                     };
 
-                    var result = await dialog.ShowAsync();
+                    var result = await ShowContentDialogSafelyAsync(dialog);
                     if (result != ContentDialogResult.Primary)
                         break;
                     // 如果点击"重新抽取"，继续循环重新抽取

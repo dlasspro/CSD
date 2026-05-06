@@ -1,5 +1,7 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 
@@ -90,9 +92,13 @@ namespace CSD
 
             CarouselSubjectText.Text = item.Subject;
             CarouselSubjectText.FontSize = Math.Min(carouselFontSize * 1.3, 96);
-            CarouselContentText.Text = item.Content;
-            CarouselContentText.FontSize = carouselFontSize;
-            CarouselContentText.LineHeight = carouselFontSize * 1.6;
+
+            // 使用 Markdown 渲染内容
+            CarouselContentHost.Content = MarkdownTextRenderer.CreateRichTextBlock(
+                item.Content,
+                carouselFontSize,
+                (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]);
+
             CarouselProgressText.Text = $"{_carouselIndex + 1} / {_carouselItems.Count}";
 
             if (_isFirstShow)
