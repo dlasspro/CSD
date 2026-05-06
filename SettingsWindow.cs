@@ -46,7 +46,16 @@ namespace CSD
         private const string SubjectListKey = "Settings_SubjectList";
         private const string RosterListKey = "Settings_RosterList";
         private const string TokenKey = "Token";
-
+        private const string ThemeModeKey = "Display_ThemeMode";
+        private const string TimeCardEnabledKey = "Display_TimeCardEnabled";
+        private const string EmptySubjectDisplayKey = "Display_EmptySubjectDisplay";
+        private const string ShowRandomButtonKey = "Display_ShowRandomButton";
+        private const string ShowFullscreenButtonKey = "Display_ShowFullscreenButton";
+        private const string CardHoverEffectKey = "Display_CardHoverEffect";
+        private const string EnhancedTouchModeKey = "Display_EnhancedTouchMode";
+        private const string ShowAntiScreenBurnCardKey = "Display_ShowAntiScreenBurnCard";
+        private const string ForceDesktopModeKey = "Display_ForceDesktopMode";
+        private const string LateStudentsArePresentKey = "Display_LateStudentsArePresent";
         private static readonly string[] DefaultSubjectNames =
         [
             "语文", "数学", "英语", "物理", "化学", "生物", "政治", "历史", "地理", "其他"
@@ -71,6 +80,21 @@ namespace CSD
         private readonly NumberBox _carouselIntervalBox;
         private readonly NumberBox _carouselFontSizeBox;
         private readonly ToggleSwitch _debugModeToggle;
+        private readonly ToggleSwitch _timeCardEnabledToggle;
+        private readonly ComboBox _emptySubjectDisplayCombo;
+        private readonly ToggleSwitch _showRandomButtonToggle;
+        private readonly ToggleSwitch _showFullscreenButtonToggle;
+        private readonly ToggleSwitch _cardHoverEffectToggle;
+        private readonly ToggleSwitch _enhancedTouchModeToggle;
+        private readonly ToggleSwitch _showAntiScreenBurnCardToggle;
+        private readonly ToggleSwitch _forceDesktopModeToggle;
+        private readonly ToggleSwitch _lateStudentsArePresentToggle;
+        private readonly ToggleSwitch _editAutoSaveToggle;
+        private readonly ToggleSwitch _editBlockNonTodayAutoSaveToggle;
+        private readonly ToggleSwitch _editConfirmNonTodaySaveToggle;
+        private readonly ToggleSwitch _editRefreshBeforeEditToggle;
+        private readonly TextBox _editAutoSavePromptTextBox;
+        private readonly TextBox _editManualSavePromptTextBox;
         private readonly ComboBox _dataProviderCombo;
         private readonly TextBox _kvTokenBox;
         private readonly TextBlock _deviceOwnerTitleText;
@@ -103,6 +127,8 @@ namespace CSD
         private Grid _rosterCardsGrid = null!;
         private readonly List<string> _rosterStudents = new();
         private int _rosterCloudPushGeneration;
+        private int _editCloudPushGeneration;
+        private bool _editPrefsPulledThisSession;
         private readonly Grid _appTitleBar;
         private readonly ColumnDefinition _leftInsetColumn;
         private readonly ColumnDefinition _rightInsetColumn;
@@ -162,6 +188,141 @@ namespace CSD
             _debugModeToggle = new ToggleSwitch
             {
                 IsOn = settings.ContainsKey(DebugModeKey) && (bool)(settings[DebugModeKey] ?? false)
+            };
+
+            // --- 显示设置 ---
+            _timeCardEnabledToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(TimeCardEnabledKey) && (bool)(settings[TimeCardEnabledKey] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _emptySubjectDisplayCombo = new ComboBox
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                MinHeight = 40
+            };
+            _emptySubjectDisplayCombo.Items.Add("卡片");
+            _emptySubjectDisplayCombo.Items.Add("列表");
+            _emptySubjectDisplayCombo.Items.Add("隐藏");
+            var savedEmptyDisplay = settings[EmptySubjectDisplayKey] as string ?? "卡片";
+            var emptyDisplayIdx = _emptySubjectDisplayCombo.Items.IndexOf(savedEmptyDisplay);
+            _emptySubjectDisplayCombo.SelectedIndex = emptyDisplayIdx >= 0 ? emptyDisplayIdx : 0;
+
+            _showRandomButtonToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(ShowRandomButtonKey) && (bool)(settings[ShowRandomButtonKey] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _showFullscreenButtonToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(ShowFullscreenButtonKey) && (bool)(settings[ShowFullscreenButtonKey] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _cardHoverEffectToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(CardHoverEffectKey) && (bool)(settings[CardHoverEffectKey] ?? true),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _enhancedTouchModeToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(EnhancedTouchModeKey) && (bool)(settings[EnhancedTouchModeKey] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _showAntiScreenBurnCardToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(ShowAntiScreenBurnCardKey) && (bool)(settings[ShowAntiScreenBurnCardKey] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _forceDesktopModeToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(ForceDesktopModeKey) && (bool)(settings[ForceDesktopModeKey] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _lateStudentsArePresentToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(LateStudentsArePresentKey) && (bool)(settings[LateStudentsArePresentKey] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            // --- 编辑行为 ---
+            _editAutoSaveToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(EditPreferencesKeys.AutoSave) && (bool)(settings[EditPreferencesKeys.AutoSave] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+            _editBlockNonTodayAutoSaveToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(EditPreferencesKeys.BlockNonTodayAutoSave) && (bool)(settings[EditPreferencesKeys.BlockNonTodayAutoSave] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+            _editConfirmNonTodaySaveToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(EditPreferencesKeys.ConfirmNonTodaySave) && (bool)(settings[EditPreferencesKeys.ConfirmNonTodaySave] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+            _editRefreshBeforeEditToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(EditPreferencesKeys.RefreshBeforeEdit) && (bool)(settings[EditPreferencesKeys.RefreshBeforeEdit] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+            _editAutoSavePromptTextBox = new TextBox
+            {
+                Text = settings[EditPreferencesKeys.AutoSavePromptText] as string ?? "喵？喵呜！",
+                AcceptsReturn = false,
+                TextWrapping = TextWrapping.Wrap,
+                MinHeight = 40,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            _editManualSavePromptTextBox = new TextBox
+            {
+                Text = settings[EditPreferencesKeys.ManualSavePromptText] as string ?? "写完后点击上传谢谢喵",
+                AcceptsReturn = false,
+                TextWrapping = TextWrapping.Wrap,
+                MinHeight = 40,
+                HorizontalAlignment = HorizontalAlignment.Stretch
             };
 
             _dataProviderCombo = new ComboBox
@@ -325,6 +486,7 @@ namespace CSD
             _navigationItemsPanel.Children.Add(CreateNavigationButton("科目", "subjects", "\uE70F"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("名单", "roster", "\uE716"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("刷新", "refresh", "\uE72C"));
+            _navigationItemsPanel.Children.Add(CreateNavigationButton("编辑", "edit", "\uE70F"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("显示", "display", "\uE7F8"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("轮播与调试", "playback", "\uE8B2"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("账户与数据", "account", "\uE716"));
@@ -383,12 +545,20 @@ namespace CSD
             LoadRosterFromSettings();
 
             var displayView = CreateCategoryView(
-                CreateSettingRow("最小卡片宽度", "影响首页作业卡片的最小宽度。", _minCardWidthBox),
-                CreateSettingRow("卡片间距", "首页卡片之间的间距大小。", _cardGapBox),
-                CreateSettingRow("科目字体大小", "控制作业科目标题的字号。", _subjectFontSizeBox),
-                CreateSettingRow("内容字体大小", "控制作业详情内容的字号。", _contentFontSizeBox));
+                BuildThemeSettingsContent(),
+                CreateSettingRow("启用时间卡片", "timeCard.enabled", _timeCardEnabledToggle),
+                CreateSettingRow("空科目的显示方式", "display.emptySubjectDisplay", _emptySubjectDisplayCombo),
+                CreateSettingRow("是否显示随机点名按钮", "display.showRandomButton", _showRandomButtonToggle),
+                CreateSettingRow("是否显示全屏按钮", "display.showFullscreenButton", _showFullscreenButtonToggle),
+                CreateSettingRow("是否启用卡片悬浮效果", "display.cardHoverEffect", _cardHoverEffectToggle),
+                CreateSettingRow("是否启用增强触摸模式", "display.enhancedTouchMode", _enhancedTouchModeToggle),
+                CreateSettingRow("是否显示防烧屏忽悠卡片", "display.showAntiScreenBurnCard", _showAntiScreenBurnCardToggle),
+                CreateSettingRow("强制使用一体机UI模式", "display.forceDesktopMode", _forceDesktopModeToggle),
+                CreateSettingRow("将迟到人数算入出勤人数", "display.lateStudentsArePresent", _lateStudentsArePresentToggle));
 
             var refreshView = CreateCategoryView(BuildRefreshSettingsContent());
+
+            var editView = CreateCategoryView(BuildEditSettingsContent());
 
             var playbackView = CreateCategoryView(
                 CreateSettingRow("轮播切换间隔", "课堂展示时轮播的切换速度。", _carouselIntervalBox),
@@ -403,6 +573,7 @@ namespace CSD
             _categoryViews["subjects"] = subjectsView;
             _categoryViews["roster"] = rosterView;
             _categoryViews["refresh"] = refreshView;
+            _categoryViews["edit"] = editView;
             _categoryViews["display"] = displayView;
             _categoryViews["playback"] = playbackView;
             _categoryViews["account"] = accountView;
@@ -411,6 +582,7 @@ namespace CSD
             _detailsHost.Children.Add(subjectsView);
             _detailsHost.Children.Add(rosterView);
             _detailsHost.Children.Add(refreshView);
+            _detailsHost.Children.Add(editView);
             _detailsHost.Children.Add(displayView);
             _detailsHost.Children.Add(playbackView);
             _detailsHost.Children.Add(accountView);
@@ -505,8 +677,8 @@ namespace CSD
                 case "display":
                     _pageTitleText.Visibility = Visibility.Visible;
                     _pageDescriptionText.Visibility = Visibility.Visible;
-                    _pageTitleText.Text = "显示";
-                    _pageDescriptionText.Text = "调整首页卡片的宽度、间距和文字大小。";
+                    _pageTitleText.Text = "显示设置";
+                    _pageDescriptionText.Text = "控制主题、卡片展示、按钮显隐及交互效果等界面相关选项。";
                     break;
 
                 case "refresh":
@@ -514,6 +686,14 @@ namespace CSD
                     _pageDescriptionText.Visibility = Visibility.Visible;
                     _pageTitleText.Text = "刷新设置";
                     _pageDescriptionText.Text = "定时从数据源拉取最新作业，并驱动主界面等全局组件一并更新。";
+                    break;
+
+                case "edit":
+                    _pageTitleText.Visibility = Visibility.Visible;
+                    _pageDescriptionText.Visibility = Visibility.Visible;
+                    _pageTitleText.Text = "编辑设置";
+                    _pageDescriptionText.Text = "自动保存、非当天写入限制、确认与提示文案；部分项会同步到云端。";
+                    RequestEditPrefsPullFromCloudIfNeeded();
                     break;
 
                 case "playback":
@@ -777,6 +957,21 @@ namespace CSD
             _carouselIntervalBox.ValueChanged += (_, _) => PersistSettings();
             _carouselFontSizeBox.ValueChanged += (_, _) => PersistSettings();
             _debugModeToggle.Toggled += (_, _) => PersistSettings();
+            _timeCardEnabledToggle.Toggled += (_, _) => PersistSettings();
+            _emptySubjectDisplayCombo.SelectionChanged += (_, _) => PersistSettings();
+            _showRandomButtonToggle.Toggled += (_, _) => PersistSettings();
+            _showFullscreenButtonToggle.Toggled += (_, _) => PersistSettings();
+            _cardHoverEffectToggle.Toggled += (_, _) => PersistSettings();
+            _enhancedTouchModeToggle.Toggled += (_, _) => PersistSettings();
+            _showAntiScreenBurnCardToggle.Toggled += (_, _) => PersistSettings();
+            _forceDesktopModeToggle.Toggled += (_, _) => PersistSettings();
+            _lateStudentsArePresentToggle.Toggled += (_, _) => PersistSettings();
+            _editAutoSaveToggle.Toggled += (_, _) => { PersistSettings(); ScheduleEditPrefsCloudPush(); };
+            _editBlockNonTodayAutoSaveToggle.Toggled += (_, _) => { PersistSettings(); ScheduleEditPrefsCloudPush(); };
+            _editConfirmNonTodaySaveToggle.Toggled += (_, _) => { PersistSettings(); ScheduleEditPrefsCloudPush(); };
+            _editRefreshBeforeEditToggle.Toggled += (_, _) => { PersistSettings(); ScheduleEditPrefsCloudPush(); };
+            _editAutoSavePromptTextBox.TextChanged += (_, _) => { PersistSettings(); ScheduleEditPrefsCloudPush(); };
+            _editManualSavePromptTextBox.TextChanged += (_, _) => { PersistSettings(); ScheduleEditPrefsCloudPush(); };
             _kvTokenBox.TextChanged += (_, _) => PersistSettings();
         }
 
@@ -796,6 +991,21 @@ namespace CSD
             settings[CarouselIntervalKey] = _carouselIntervalBox.Value;
             settings[CarouselFontSizeKey] = _carouselFontSizeBox.Value;
             settings[DebugModeKey] = _debugModeToggle.IsOn;
+            settings[TimeCardEnabledKey] = _timeCardEnabledToggle.IsOn;
+            settings[EmptySubjectDisplayKey] = _emptySubjectDisplayCombo.SelectedItem?.ToString() ?? "卡片";
+            settings[ShowRandomButtonKey] = _showRandomButtonToggle.IsOn;
+            settings[ShowFullscreenButtonKey] = _showFullscreenButtonToggle.IsOn;
+            settings[CardHoverEffectKey] = _cardHoverEffectToggle.IsOn;
+            settings[EnhancedTouchModeKey] = _enhancedTouchModeToggle.IsOn;
+            settings[ShowAntiScreenBurnCardKey] = _showAntiScreenBurnCardToggle.IsOn;
+            settings[ForceDesktopModeKey] = _forceDesktopModeToggle.IsOn;
+            settings[LateStudentsArePresentKey] = _lateStudentsArePresentToggle.IsOn;
+            settings[EditPreferencesKeys.AutoSave] = _editAutoSaveToggle.IsOn;
+            settings[EditPreferencesKeys.BlockNonTodayAutoSave] = _editBlockNonTodayAutoSaveToggle.IsOn;
+            settings[EditPreferencesKeys.ConfirmNonTodaySave] = _editConfirmNonTodaySaveToggle.IsOn;
+            settings[EditPreferencesKeys.RefreshBeforeEdit] = _editRefreshBeforeEditToggle.IsOn;
+            settings[EditPreferencesKeys.AutoSavePromptText] = _editAutoSavePromptTextBox.Text ?? "";
+            settings[EditPreferencesKeys.ManualSavePromptText] = _editManualSavePromptTextBox.Text ?? "";
 
             if (_dataProviderCombo.SelectedItem is string providerLabel)
                 settings[DataProviderKey] = providerLabel;
@@ -2432,6 +2642,125 @@ namespace CSD
             PersistRosterLocalOnly();
         }
 
+        private StackPanel BuildThemeSettingsContent()
+        {
+            var root = new StackPanel { Spacing = 16 };
+
+            var themeRow = new Grid
+            {
+                Padding = new Thickness(16, 12, 16, 12),
+                ColumnSpacing = 16
+            };
+            themeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            themeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var themeIcon = new FontIcon
+            {
+                Glyph = "\uE793",
+                FontSize = 18,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(themeIcon, 0);
+
+            var themeLabelStack = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
+            themeLabelStack.Children.Add(new TextBlock
+            {
+                Text = "主题模式",
+                FontSize = 15,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+            });
+            themeLabelStack.Children.Add(new TextBlock
+            {
+                Text = "选择明亮或暗黑主题",
+                FontSize = 13,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            });
+            Grid.SetColumn(themeLabelStack, 0);
+
+            var savedTheme = AppSettings.Values[ThemeModeKey] as string ?? "dark";
+            var isDark = savedTheme == "dark";
+
+            var lightBtn = new Button
+            {
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children =
+                    {
+                        new FontIcon { Glyph = "\uE706", FontSize = 16 },
+                        new TextBlock { Text = "明亮", VerticalAlignment = VerticalAlignment.Center }
+                    }
+                },
+                Padding = new Thickness(16, 8, 16, 8),
+                CornerRadius = new CornerRadius(6, 0, 0, 6),
+                BorderThickness = new Thickness(1),
+                Background = new SolidColorBrush(WithAlpha(GetBrushColor("TextFillColorPrimaryBrush", Colors.White), 0)),
+                BorderBrush = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"],
+                Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]
+            };
+            lightBtn.Click += (_, _) =>
+            {
+                ApplyThemeMode("light");
+            };
+
+            var darkBtn = new Button
+            {
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children =
+                    {
+                        new FontIcon { Glyph = "\uE708", FontSize = 16 },
+                        new TextBlock { Text = "暗黑", VerticalAlignment = VerticalAlignment.Center }
+                    }
+                },
+                Padding = new Thickness(16, 8, 16, 8),
+                CornerRadius = new CornerRadius(0, 6, 6, 0),
+                BorderThickness = new Thickness(1),
+                Background = isDark ? (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"] : new SolidColorBrush(WithAlpha(GetBrushColor("TextFillColorPrimaryBrush", Colors.White), 0)),
+                BorderBrush = isDark ? (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"] : (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"],
+                Foreground = isDark ? (Brush)Application.Current.Resources["TextOnAccentFillColorPrimaryBrush"] : (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]
+            };
+            darkBtn.Click += (_, _) =>
+            {
+                ApplyThemeMode("dark");
+            };
+
+            var themeButtonsStack = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 0
+            };
+            themeButtonsStack.Children.Add(lightBtn);
+            themeButtonsStack.Children.Add(darkBtn);
+            Grid.SetColumn(themeButtonsStack, 1);
+
+            themeRow.Children.Add(themeLabelStack);
+            themeRow.Children.Add(themeButtonsStack);
+
+            root.Children.Add(new Border
+            {
+                CornerRadius = new CornerRadius(10),
+                Child = themeRow
+            });
+
+            return root;
+        }
+
+        private void ApplyThemeMode(string mode)
+        {
+            AppSettings.Values[ThemeModeKey] = mode;
+            var app = Application.Current;
+            if (app is not null)
+            {
+                app.RequestedTheme = mode == "dark" ? ApplicationTheme.Dark : ApplicationTheme.Light;
+            }
+            PersistSettings();
+        }
+
         private StackPanel BuildRefreshSettingsContent()
         {
             var root = new StackPanel { Spacing = 16 };
@@ -2522,6 +2851,206 @@ namespace CSD
 
             var outer = new StackPanel { Spacing = 0 };
             outer.Children.Add(rowGrid);
+            if (showDividerBelow)
+            {
+                outer.Children.Add(new Border
+                {
+                    Height = 1,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Background = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
+                    Margin = new Thickness(16, 0, 16, 0)
+                });
+            }
+
+            return new Border { Child = outer };
+        }
+
+        private StackPanel BuildEditSettingsContent()
+        {
+            var root = new StackPanel { Spacing = 16 };
+
+            var cardInner = new StackPanel { Spacing = 0 };
+            cardInner.Children.Add(CreateEditToggleSettingCardRow(EditSettingsGlyph("\uE74E"), "是否启用自动保存", "edit.autoSave", _editAutoSaveToggle, showDividerBelow: true));
+            cardInner.Children.Add(CreateEditToggleSettingCardRow(EditSettingsGlyph("\uE787"), "禁止写入非当天作业数据", "edit.blockNonTodayWrite", _editBlockNonTodayAutoSaveToggle, showDividerBelow: true));
+            cardInner.Children.Add(CreateEditToggleSettingCardRow(EditSettingsGlyph("\uE73E"), "保存非当天数据需确认", "edit.confirmNonTodaySave", _editConfirmNonTodaySaveToggle, showDividerBelow: true));
+            cardInner.Children.Add(CreateEditToggleSettingCardRow(EditSettingsGlyph("\uE72C"), "编辑前是否自动刷新", "edit.refreshBeforeEdit", _editRefreshBeforeEditToggle, showDividerBelow: true));
+            cardInner.Children.Add(CreateEditCompoundTextSettingRow(EditSettingsGlyph("\uE8A5"), "自动保存模式提示文本", "edit.autoSavePromptText", _editAutoSavePromptTextBox, showDividerBelow: true));
+            cardInner.Children.Add(CreateEditCompoundTextSettingRow(EditSettingsGlyph("\uE8A5"), "手动保存模式提示文本", "edit.manualSavePromptText", _editManualSavePromptTextBox, showDividerBelow: false));
+
+            root.Children.Add(new Border
+            {
+                Background = (Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"],
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(0, 2, 0, 2),
+                MaxWidth = 920,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Child = cardInner
+            });
+
+            return root;
+        }
+
+        private static FrameworkElement EditSettingsGlyph(string glyph)
+        {
+            return new FontIcon
+            {
+                Glyph = glyph,
+                FontSize = 18,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            };
+        }
+
+        private static Button CreateEditRowMoreButton()
+        {
+            var moreButton = new Button
+            {
+                Padding = new Thickness(4),
+                MinWidth = 36,
+                MinHeight = 36,
+                Background = new SolidColorBrush(Colors.Transparent),
+                BorderThickness = new Thickness(0),
+                CornerRadius = new CornerRadius(8),
+                Content = new FontIcon
+                {
+                    Glyph = "\uE712",
+                    FontSize = 14,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+            moreButton.Click += (_, _) => { };
+            return moreButton;
+        }
+
+        private Border CreateEditToggleSettingCardRow(
+            FrameworkElement leadingIcon,
+            string primaryText,
+            string keyText,
+            ToggleSwitch toggle,
+            bool showDividerBelow)
+        {
+            var labelStack = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+            labelStack.Children.Add(new TextBlock
+            {
+                Text = primaryText,
+                FontSize = 15,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+            });
+            labelStack.Children.Add(new TextBlock
+            {
+                Text = keyText,
+                FontSize = 12,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            });
+
+            var iconHost = new Grid
+            {
+                Width = 32,
+                Height = 32,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            leadingIcon.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            leadingIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            iconHost.Children.Add(leadingIcon);
+
+            toggle.VerticalAlignment = VerticalAlignment.Center;
+            toggle.HorizontalAlignment = HorizontalAlignment.Right;
+
+            var moreButton = CreateEditRowMoreButton();
+
+            var rowGrid = new Grid
+            {
+                Padding = new Thickness(16, 12, 16, 12),
+                ColumnSpacing = 16
+            };
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            Grid.SetColumn(iconHost, 0);
+            Grid.SetColumn(labelStack, 1);
+            Grid.SetColumn(toggle, 2);
+            Grid.SetColumn(moreButton, 3);
+            rowGrid.Children.Add(iconHost);
+            rowGrid.Children.Add(labelStack);
+            rowGrid.Children.Add(toggle);
+            rowGrid.Children.Add(moreButton);
+
+            var outer = new StackPanel { Spacing = 0 };
+            outer.Children.Add(rowGrid);
+            if (showDividerBelow)
+            {
+                outer.Children.Add(new Border
+                {
+                    Height = 1,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Background = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
+                    Margin = new Thickness(16, 0, 16, 0)
+                });
+            }
+
+            return new Border { Child = outer };
+        }
+
+        private Border CreateEditCompoundTextSettingRow(
+            FrameworkElement leadingIcon,
+            string primaryText,
+            string keyText,
+            TextBox textBox,
+            bool showDividerBelow)
+        {
+            var labelStack = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+            labelStack.Children.Add(new TextBlock
+            {
+                Text = primaryText,
+                FontSize = 15,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+            });
+            labelStack.Children.Add(new TextBlock
+            {
+                Text = keyText,
+                FontSize = 12,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            });
+
+            var iconHost = new Grid
+            {
+                Width = 32,
+                Height = 32,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            leadingIcon.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            leadingIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            iconHost.Children.Add(leadingIcon);
+
+            var moreButton = CreateEditRowMoreButton();
+
+            var headerGrid = new Grid
+            {
+                Padding = new Thickness(16, 12, 16, 8),
+                ColumnSpacing = 16
+            };
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            Grid.SetColumn(iconHost, 0);
+            Grid.SetColumn(labelStack, 1);
+            Grid.SetColumn(moreButton, 2);
+            headerGrid.Children.Add(iconHost);
+            headerGrid.Children.Add(labelStack);
+            headerGrid.Children.Add(moreButton);
+
+            textBox.Margin = new Thickness(16, 0, 16, 12);
+            textBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+
+            var outer = new StackPanel { Spacing = 0 };
+            outer.Children.Add(headerGrid);
+            outer.Children.Add(textBox);
             if (showDividerBelow)
             {
                 outer.Children.Add(new Border
@@ -2710,6 +3239,83 @@ namespace CSD
             }
         }
 
+        private void RequestEditPrefsPullFromCloudIfNeeded()
+        {
+            if (_editPrefsPulledThisSession)
+                return;
+            _editPrefsPulledThisSession = true;
+            _ = PullEditPrefsFromCloudAndApplyUiAsync();
+        }
+
+        private async Task PullEditPrefsFromCloudAndApplyUiAsync()
+        {
+            var uiDq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            var token = await GetKvTokenSnapshotAsync().ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(token))
+                return;
+
+            var settings = AppSettings.Values;
+            var baseUrl = (settings[ServerUrlKey] as string ?? "https://kv-service.wuyuan.dev").TrimEnd('/');
+            var ok = await EditPreferencesSync.TryPullMergeIntoAppSettingsAsync(_settingsHttpClient, baseUrl, token).ConfigureAwait(false);
+            if (!ok)
+                return;
+
+            uiDq?.TryEnqueue(() =>
+            {
+                _isAutoSaveSuspended = true;
+                try
+                {
+                    ApplyEditControlsFromAppSettings();
+                }
+                finally
+                {
+                    _isAutoSaveSuspended = false;
+                }
+
+                _onSettingsChanged?.Invoke();
+            });
+        }
+
+        private void ApplyEditControlsFromAppSettings()
+        {
+            var s = AppSettings.Values;
+            _editAutoSaveToggle.IsOn = s.ContainsKey(EditPreferencesKeys.AutoSave) && (bool)(s[EditPreferencesKeys.AutoSave] ?? false);
+            _editBlockNonTodayAutoSaveToggle.IsOn = s.ContainsKey(EditPreferencesKeys.BlockNonTodayAutoSave) && (bool)(s[EditPreferencesKeys.BlockNonTodayAutoSave] ?? false);
+            _editConfirmNonTodaySaveToggle.IsOn = s.ContainsKey(EditPreferencesKeys.ConfirmNonTodaySave) && (bool)(s[EditPreferencesKeys.ConfirmNonTodaySave] ?? false);
+            _editRefreshBeforeEditToggle.IsOn = s.ContainsKey(EditPreferencesKeys.RefreshBeforeEdit) && (bool)(s[EditPreferencesKeys.RefreshBeforeEdit] ?? false);
+            _editAutoSavePromptTextBox.Text = s[EditPreferencesKeys.AutoSavePromptText] as string ?? "";
+            _editManualSavePromptTextBox.Text = s[EditPreferencesKeys.ManualSavePromptText] as string ?? "";
+        }
+
+        private async void ScheduleEditPrefsCloudPush()
+        {
+            var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            var generation = ++_editCloudPushGeneration;
+            await Task.Delay(450).ConfigureAwait(false);
+            if (generation != _editCloudPushGeneration)
+                return;
+            _ = await TryPushEditPrefsToKvCoreAsync(showErrors: false).ConfigureAwait(false);
+            dq?.TryEnqueue(() => _onSettingsChanged?.Invoke());
+        }
+
+        private async Task<bool> TryPushEditPrefsToKvCoreAsync(bool showErrors)
+        {
+            var token = await GetKvTokenSnapshotAsync().ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                if (showErrors)
+                    await ShowSimpleDialogAsync("请先填写 KV 令牌后再同步编辑偏好。");
+                return false;
+            }
+
+            var settings = AppSettings.Values;
+            var baseUrl = (settings[ServerUrlKey] as string ?? "https://kv-service.wuyuan.dev").TrimEnd('/');
+            var ok = await EditPreferencesSync.PushAsync(_settingsHttpClient, baseUrl, token).ConfigureAwait(false);
+            if (!ok && showErrors)
+                await ShowSimpleDialogAsync("编辑偏好未能写入云端，请检查网络与令牌。");
+            return ok;
+        }
+
         private async void ImportButton_Click(object sender, RoutedEventArgs e)
         {
             var openPicker = new FileOpenPicker
@@ -2735,6 +3341,8 @@ namespace CSD
                             settings[kvp.Key] = kvp.Value.GetString() ?? string.Empty;
                         else if (kvp.Value.ValueKind == JsonValueKind.Number)
                             settings[kvp.Key] = kvp.Value.GetDouble();
+                        else if (kvp.Value.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                            settings[kvp.Key] = kvp.Value.GetBoolean();
                     }
 
                     // 刷新 UI
@@ -2749,6 +3357,7 @@ namespace CSD
                     _carouselIntervalBox.Value = (double)(settings[CarouselIntervalKey] ?? 5.0);
                     _carouselFontSizeBox.Value = (double)(settings[CarouselFontSizeKey] ?? 48.0);
                     _debugModeToggle.IsOn = settings.ContainsKey(DebugModeKey) && (bool)(settings[DebugModeKey] ?? false);
+                    ApplyEditControlsFromAppSettings();
                     var importedToken = settings[TokenKey] as string ?? "";
                     _kvTokenBox.Text = importedToken;
                     _currentTokenText.Text = string.IsNullOrWhiteSpace(importedToken) ? "未设置" : "已设置";
@@ -2757,6 +3366,7 @@ namespace CSD
                     LoadRosterFromSettings();
                     _isAutoSaveSuspended = false;
                     PersistSettings();
+                    ScheduleEditPrefsCloudPush();
                 }
                 catch (Exception ex)
                 {

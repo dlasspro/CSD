@@ -55,13 +55,40 @@
         <!-- 主内容 -->
         <Grid Grid.Row="1" Padding="24,12,24,24">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Row 0: 作业卡片 -->
-            <ScrollViewer
+            <!-- Row 0: 时间卡片 -->
+            <Border
+                x:Name="TimeCard"
                 Grid.Row="0"
+                Visibility="Collapsed"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,12"
+                Padding="20,14"
+                CornerRadius="12"
+                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                    <TextBlock
+                        x:Name="TimeCardClockText"
+                        FontSize="28"
+                        FontWeight="SemiBold"
+                        TextAlignment="Center" />
+                    <TextBlock
+                        x:Name="TimeCardDateText"
+                        FontSize="13"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <!-- Row 1: 作业卡片 -->
+            <ScrollViewer
+                Grid.Row="1"
                 VerticalScrollBarVisibility="Auto"
                 HorizontalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="HomeworkContainer" Spacing="14">
@@ -74,8 +101,8 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- Row 1: 底部导航栏（含空作业按钮） -->
-            <Grid Grid.Row="1" Margin="0,12,0,0">
+            <!-- Row 2: 底部导航栏（含空作业按钮） -->
+            <Grid Grid.Row="2" Margin="0,12,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -105,6 +132,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
@@ -161,10 +189,11 @@
                     Margin="8,0,0,0" />
 
                 <Button
+                    x:Name="SyncButton"
                     Grid.Column="4"
                     VerticalAlignment="Center"
                     Click="RefreshHomeworkButton_Click"
-                    Content="刷新"
+                    Content="同步"
                     Margin="0,0,8,0" />
 
                 <Button
@@ -181,9 +210,17 @@
                     Click="PickRandomStudentButton_Click"
                     Content="随机抽取"
                     Margin="8,0,0,0" />
+
+                <Button
+                    x:Name="ToggleFullscreenButton"
+                    Grid.Column="7"
+                    VerticalAlignment="Center"
+                    Click="ToggleFullscreenButton_Click"
+                    Content="全屏"
+                    Margin="8,0,0,0" />
             </Grid>
 
-                <!-- 底部按钮：教程、关于、设置 -->
+                <!-- 空作业按钮 -->
                 <StackPanel
                     Grid.Row="2"
                     Orientation="Horizontal"
@@ -203,6 +240,41 @@
                         Content="设置" />
                 </StackPanel>
             </Grid>
+
+            <!-- 右下角：仅叠在主内容区，避免与标题栏 StatusText 重叠；置于最上层 -->
+            <Border
+                x:Name="PolicyToastRoot"
+                Grid.Row="0"
+                Grid.RowSpan="3"
+                Canvas.ZIndex="50"
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Right"
+                Margin="0,0,8,12"
+                Padding="16,14"
+                MinWidth="280"
+                MaxWidth="380"
+                Visibility="Collapsed"
+                IsHitTestVisible="False"
+                CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+                <Border.Shadow>
+                    <ThemeShadow />
+                </Border.Shadow>
+                <StackPanel Spacing="6">
+                    <TextBlock
+                        x:Name="PolicyToastTitle"
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        x:Name="PolicyToastSubtitle"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
         </Grid>
 
         <!-- 轮播覆盖层 -->
