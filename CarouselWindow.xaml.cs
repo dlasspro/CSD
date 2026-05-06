@@ -99,15 +99,13 @@ namespace CSD
             {
                 _isFirstShow = false;
                 AnimationHelper.AnimateEntrance(CarouselProgressText, fromY: -8f, durationMs: 200);
-                AnimationHelper.AnimateEntrance(CarouselSubjectText, fromY: 14f, durationMs: 240);
-                AnimationHelper.AnimateEntrance(CarouselContentText, fromY: 20f, durationMs: 280, delayMs: 60);
+                AnimationHelper.AnimateEntrance(CarouselContentPanel, fromY: 18f, durationMs: 280, delayMs: 40);
                 AnimationHelper.AnimateEntrance(ExitCarouselButton, fromY: 12f, durationMs: 220, delayMs: 100);
             }
             else
             {
-                // 切换科目时只对内容区域做入场动画，不影响底部按钮和顶部进度
-                AnimationHelper.AnimateEntrance(CarouselSubjectText, fromY: 14f, durationMs: 240);
-                AnimationHelper.AnimateEntrance(CarouselContentText, fromY: 20f, durationMs: 280, delayMs: 60);
+                // 切换科目时统一对整个内容面板做动画，避免标题和作业文本分别位移导致视觉重合
+                AnimationHelper.AnimateEntrance(CarouselContentPanel, fromY: 14f, durationMs: 240);
             }
         }
     }
