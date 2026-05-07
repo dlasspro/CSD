@@ -25,6 +25,11 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Assets\Classworks.ico" />
+    <Content Include="Assets\app.ico" />
+    <Content Include="Assets\zhaishis.png" />
+    <Content Include="Assets\saskia.jpeg" />
+    <Content Include="Assets\wuyuan.jpeg" />
     <Content Include="icons\ic_device_matebook.ico" />
     <Content Include="icons\ic_gallery_cloud_synchronization.ico" />
     <Content Include="icons\ic_public_folder.ico" />
