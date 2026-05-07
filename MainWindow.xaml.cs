@@ -188,6 +188,59 @@ namespace CSD
                 // 文本变化时更新预览
                 box.TextChanged += (_, _) => RefreshPreview();
                 
+                // 粘贴多行文本：自动拆分为多行
+                box.Paste += (s, e) =>
+                {
+                    var textBox = (TextBox)s!;
+                    var clipboardContent = textBox.SelectedText;
+                    
+                    // 尝试从剪贴板获取内容
+                    try
+                    {
+                        var dataPackageView = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+                        if (dataPackageView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text))
+                        {
+                            clipboardContent = dataPackageView.GetTextAsync().AsTask().GetAwaiter().GetResult() ?? string.Empty;
+                        }
+                    }
+                    catch { }
+                    
+                    if (string.IsNullOrEmpty(clipboardContent))
+                        return;
+                    
+                    // 规范化换行符
+                    clipboardContent = clipboardContent.Replace("\r\n", "\n").Replace("\r", "\n");
+                    
+                    // 如果粘贴内容包含换行，拆分为多行
+                    if (clipboardContent.Contains('\n'))
+                    {
+                        e.Handled = true;
+                        var index = inputBoxes.IndexOf(box);
+                        var lines = clipboardContent.Split('\n');
+                        
+                        // 第一行内容放到当前输入框（替换选中文本）
+                        var beforeSelection = box.Text.Substring(0, box.SelectionStart);
+                        var afterSelection = box.Text.Substring(box.SelectionStart + box.SelectionLength);
+                        box.Text = beforeSelection + lines[0] + afterSelection;
+                        box.SelectionStart = beforeSelection.Length + lines[0].Length;
+                        RefreshPreview();
+                        
+                        // 后续行插入为新的输入框
+                        for (int li = 1; li < lines.Length; li++)
+                        {
+                            var insertPos = index + li;
+                            // 最后一行拼接 afterSelection
+                            var lineText = lines[li];
+                            if (li == lines.Length - 1 && !string.IsNullOrEmpty(afterSelection))
+                                lineText += afterSelection;
+                            AddLine(lineText, insertPos);
+                        }
+                        
+                        // 聚焦到最后一行
+                        inputBoxes[index + lines.Length - 1].Focus(FocusState.Programmatic);
+                    }
+                };
+                
                 // 回车：在当前行下方插入新行并聚焦
                 box.KeyDown += (s, e) =>
                 {
@@ -297,46 +350,240 @@ namespace CSD
                 inputBoxes[^1].Focus(FocusState.Programmatic);
             };
             
-            // 组装界面（预览在上，输入框在下）
-            var panel = new StackPanel
+            // ========== 快捷面板 ==========
+            
+            // 获取当前聚焦的输入框
+            TextBox? GetFocusedBox()
             {
-                Width = 640,
+                foreach (var b in inputBoxes)
+                {
+                    if (b.FocusState != FocusState.Unfocused)
+                        return b;
+                }
+                return inputBoxes.Count > 0 ? inputBoxes[^1] : null;
+            }
+            
+            // 在光标位置插入文本
+            void InsertAtCursor(string before, string after = "")
+            {
+                var box = GetFocusedBox();
+                if (box == null) return;
+                
+                var start = box.SelectionStart;
+                var selectedText = box.SelectedText;
+                var replacement = before + (selectedText.Length > 0 ? selectedText : "文字") + after;
+                
+                box.Text = box.Text.Substring(0, start) + replacement + box.Text.Substring(start + box.SelectionLength);
+                
+                // 选中插入的占位文字
+                box.SelectionStart = start + before.Length;
+                box.SelectionLength = selectedText.Length > 0 ? selectedText.Length : 2;
+                box.Focus(FocusState.Programmatic);
+                RefreshPreview();
+            }
+            
+            // 在当前行前插入新行
+            void InsertNewLine(string text)
+            {
+                var box = GetFocusedBox();
+                if (box == null) return;
+                
+                var index = inputBoxes.IndexOf(box);
+                AddLine(text, index);
+                inputBoxes[index].Focus(FocusState.Programmatic);
+                inputBoxes[index].SelectionStart = inputBoxes[index].Text.Length;
+                RefreshPreview();
+            }
+            
+            // 构建快捷面板内容
+            StackPanel BuildShortcutPanel()
+            {
+                var panel = new StackPanel { Spacing = 6 };
+                
+                // MD 区
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "Markdown",
+                    FontSize = 13,
+                    FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                    Margin = new Thickness(0, 4, 0, 2)
+                });
+                
+                var mdGrid = new Grid
+                {
+                    ColumnDefinitions =
+                    {
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
+                    },
+                    RowDefinitions =
+                    {
+                        new RowDefinition { Height = GridLength.Auto },
+                        new RowDefinition { Height = GridLength.Auto },
+                        new RowDefinition { Height = GridLength.Auto },
+                    },
+                    RowSpacing = 4,
+                    ColumnSpacing = 4
+                };
+                
+                void AddToolToGrid(Grid grid, int row, int col, string label, string tooltip, string before, string after = "", bool newLine = false)
+                {
+                    var btn = new Button
+                    {
+                        Content = label,
+                        FontSize = 12,
+                        Padding = new Thickness(6, 4, 6, 4),
+                        MinWidth = 0,
+                        HorizontalAlignment = HorizontalAlignment.Stretch
+                    };
+                    ToolTipService.SetToolTip(btn, tooltip);
+                    var cb = before; var ca = after; var cn = newLine;
+                    btn.Click += (s, e) =>
+                    {
+                        if (cn) InsertNewLine(cb);
+                        else InsertAtCursor(cb, ca);
+                    };
+                    Grid.SetRow(btn, row);
+                    Grid.SetColumn(btn, col);
+                    grid.Children.Add(btn);
+                }
+                
+                // MD 按钮网格
+                AddToolToGrid(mdGrid, 0, 0, "B", "粗体 **粗体**", "**", "**");
+                AddToolToGrid(mdGrid, 0, 1, "I", "斜体 *斜体*", "*", "*");
+                AddToolToGrid(mdGrid, 0, 2, "S", "删除线 ~~删除线~~", "~~", "~~");
+                AddToolToGrid(mdGrid, 0, 3, "`", "行内代码 `代码`", "`", "`");
+                AddToolToGrid(mdGrid, 1, 0, "H1", "一级标题", "# ", newLine: true);
+                AddToolToGrid(mdGrid, 1, 1, "H2", "二级标题", "## ", newLine: true);
+                AddToolToGrid(mdGrid, 1, 2, "H3", "三级标题", "### ", newLine: true);
+                AddToolToGrid(mdGrid, 1, 3, ">", "引用", "> ", newLine: true);
+                AddToolToGrid(mdGrid, 2, 0, "•", "无序列表", "- ", newLine: true);
+                AddToolToGrid(mdGrid, 2, 1, "1.", "有序列表", "1. ", newLine: true);
+                AddToolToGrid(mdGrid, 2, 2, "[]", "链接 [文本](url)", "[", "](url)");
+                AddToolToGrid(mdGrid, 2, 3, "```", "代码块", "```\n代码\n```", newLine: true);
+                
+                panel.Children.Add(mdGrid);
+                
+                // MFM 区
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "MFM",
+                    FontSize = 13,
+                    FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                    Margin = new Thickness(0, 8, 0, 2)
+                });
+                
+                var mfmGrid = new Grid
+                {
+                    ColumnDefinitions =
+                    {
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+                        new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
+                    },
+                    RowDefinitions =
+                    {
+                        new RowDefinition { Height = GridLength.Auto },
+                        new RowDefinition { Height = GridLength.Auto },
+                        new RowDefinition { Height = GridLength.Auto },
+                        new RowDefinition { Height = GridLength.Auto },
+                    },
+                    RowSpacing = 4,
+                    ColumnSpacing = 4
+                };
+                
+                // MFM 按钮网格
+                AddToolToGrid(mfmGrid, 0, 0, "x2", "放大", "$[x2 ", "]");
+                AddToolToGrid(mfmGrid, 0, 1, "x3", "放大", "$[x3 ", "]");
+                AddToolToGrid(mfmGrid, 0, 2, "x4", "放大", "$[x4 ", "]");
+                AddToolToGrid(mfmGrid, 0, 3, "tada", "动画", "$[tada ", "]");
+                AddToolToGrid(mfmGrid, 0, 4, "jelly", "果冻", "$[jelly ", "]");
+                AddToolToGrid(mfmGrid, 1, 0, "spin", "旋转", "$[spin ", "]");
+                AddToolToGrid(mfmGrid, 1, 1, "shake", "摇晃", "$[shake ", "]");
+                AddToolToGrid(mfmGrid, 1, 2, "blur", "模糊", "$[blur ", "]");
+                AddToolToGrid(mfmGrid, 1, 3, "rainbow", "彩虹", "$[rainbow ", "]");
+                AddToolToGrid(mfmGrid, 1, 4, "sparkle", "闪光", "$[sparkle ", "]");
+                AddToolToGrid(mfmGrid, 2, 0, "fg", "文字颜色", "$[fg.color=f00 ", "]");
+                AddToolToGrid(mfmGrid, 2, 1, "bg", "背景色", "$[bg.color=ff0 ", "]");
+                AddToolToGrid(mfmGrid, 2, 2, "font", "字体", "$[font.serif ", "]");
+                AddToolToGrid(mfmGrid, 2, 3, "ruby", "注音", "$[ruby ", " 注音]");
+                AddToolToGrid(mfmGrid, 2, 4, "@", "提及", "@");
+                AddToolToGrid(mfmGrid, 3, 0, "#", "标签", "#");
+                AddToolToGrid(mfmGrid, 3, 1, "<s>", "缩小", "<small>", "</small>");
+                AddToolToGrid(mfmGrid, 3, 2, "<c>", "居中", "<center>", "</center>");
+                AddToolToGrid(mfmGrid, 3, 3, "jump", "跳动", "$[jump ", "]");
+                AddToolToGrid(mfmGrid, 3, 4, "flip", "翻转", "$[flip ", "]");
+                
+                panel.Children.Add(mfmGrid);
+                
+                return panel;
+            }
+            
+            // ========== 组装界面 ==========
+            
+            // 左侧快捷面板
+            var shortcutPanel = BuildShortcutPanel();
+            var shortcutScrollViewer = new ScrollViewer
+            {
+                Content = shortcutPanel,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Padding = new Thickness(4, 0, 8, 0),
+                Width = 280
+            };
+            
+            // 右侧编辑区内容
+            var editorContent = new StackPanel
+            {
                 Spacing = 10,
                 Padding = new Thickness(4)
             };
             
-            panel.Children.Add(new TextBlock
+            editorContent.Children.Add(new TextBlock
             {
                 Text = "预览：",
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
             });
-            panel.Children.Add(new ScrollViewer
-            {
-                Content = previewBorder,
-                MaxHeight = 180,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-            });
+            editorContent.Children.Add(previewBorder);
             
-            panel.Children.Add(new TextBlock
+            editorContent.Children.Add(new TextBlock
             {
                 Text = "每行一条内容，回车添加新行：",
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Margin = new Thickness(0, 4, 0, 0)
             });
             
-            var scrollViewer = new ScrollViewer
+            editorContent.Children.Add(linesPanel);
+            editorContent.Children.Add(addLineBtn);
+
+            // 右侧编辑区整体可滚动
+            var editorScrollViewer = new ScrollViewer
             {
-                Content = linesPanel,
-                MaxHeight = 280,
+                Content = editorContent,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto
             };
-            panel.Children.Add(scrollViewer);
-            panel.Children.Add(addLineBtn);
+            
+            // 左右布局
+            var mainGrid = new Grid
+            {
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) },
+                    new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
+                }
+            };
+            Grid.SetColumn(shortcutScrollViewer, 0);
+            Grid.SetColumn(editorScrollViewer, 1);
+            mainGrid.Children.Add(shortcutScrollViewer);
+            mainGrid.Children.Add(editorScrollViewer);
             
             var dialog = new ContentDialog
             {
                 Title = title,
-                Content = panel,
+                Content = mainGrid,
                 PrimaryButtonText = "保存",
                 CloseButtonText = "取消",
                 XamlRoot = xamlRoot,
