@@ -218,6 +218,30 @@ namespace CSD
                             RefreshPreview();
                         }
                     }
+                    // 上方向键：光标在行首时跳转到上一行末尾
+                    else if (e.Key == Windows.System.VirtualKey.Up)
+                    {
+                        var index = inputBoxes.IndexOf(box);
+                        if (index > 0 && box.SelectionStart == 0)
+                        {
+                            e.Handled = true;
+                            var prevBox = inputBoxes[index - 1];
+                            prevBox.Focus(FocusState.Programmatic);
+                            prevBox.SelectionStart = prevBox.Text.Length;
+                        }
+                    }
+                    // 下方向键：光标在行末时跳转到下一行开头
+                    else if (e.Key == Windows.System.VirtualKey.Down)
+                    {
+                        var index = inputBoxes.IndexOf(box);
+                        if (index < inputBoxes.Count - 1 && box.SelectionStart == box.Text.Length)
+                        {
+                            e.Handled = true;
+                            var nextBox = inputBoxes[index + 1];
+                            nextBox.Focus(FocusState.Programmatic);
+                            nextBox.SelectionStart = 0;
+                        }
+                    }
                 };
                 
                 // 插入到指定位置或末尾
