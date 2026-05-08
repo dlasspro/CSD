@@ -47,6 +47,12 @@ namespace CSD
         private const string RosterListKey = "Settings_RosterList";
         private const string TokenKey = "Token";
 
+        private const string RandomPickerEnabledKey = "randomPicker.enabled";
+        private const string RandomPickerMinNumberKey = "randomPicker.minNumber";
+        private const string RandomPickerMaxNumberKey = "randomPicker.maxNumber";
+        private const string RandomPickerDefaultCountKey = "randomPicker.defaultCount";
+        private const string RandomPickerAnimationKey = "randomPicker.animation";
+
         private static readonly string[] DefaultSubjectNames =
         [
             "语文", "数学", "英语", "物理", "化学", "生物", "政治", "历史", "地理", "其他"
@@ -79,6 +85,11 @@ namespace CSD
         private readonly TextBlock _deviceIdText;
         private readonly TextBlock _deviceCreatedText;
         private readonly TextBlock _deviceUpdatedText;
+        private readonly ToggleSwitch _randomPickerEnabledToggle;
+        private readonly NumberBox _randomPickerMinNumberBox;
+        private readonly NumberBox _randomPickerMaxNumberBox;
+        private readonly NumberBox _randomPickerDefaultCountBox;
+        private readonly ToggleSwitch _randomPickerAnimationToggle;
         private readonly HttpClient _settingsHttpClient = new();
         private readonly TextBlock _currentTokenText;
         private readonly TextBlock _pageTitleText;
@@ -220,6 +231,29 @@ namespace CSD
                 TextWrapping = TextWrapping.Wrap,
                 MinHeight = 40,
                 HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            // --- 随机点名 ---
+            _randomPickerEnabledToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(RandomPickerEnabledKey) ? (bool)(settings[RandomPickerEnabledKey] ?? true) : true,
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _randomPickerMinNumberBox = CreateNumberBoxWithoutHeader(1, 999, 1, ConvertToDouble(settings[RandomPickerMinNumberKey], 1.0));
+            _randomPickerMaxNumberBox = CreateNumberBoxWithoutHeader(1, 9999, 1, ConvertToDouble(settings[RandomPickerMaxNumberKey], 60.0));
+            _randomPickerDefaultCountBox = CreateNumberBoxWithoutHeader(1, 100, 1, ConvertToDouble(settings[RandomPickerDefaultCountKey], 1.0));
+
+            _randomPickerAnimationToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(RandomPickerAnimationKey) ? (bool)(settings[RandomPickerAnimationKey] ?? true) : true,
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
             };
 
             _dataProviderCombo = new ComboBox
@@ -386,6 +420,7 @@ namespace CSD
             _navigationItemsPanel.Children.Add(CreateNavigationButton("编辑", "edit", "\uE70F"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("显示", "display", "\uE7F8"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("轮播与调试", "playback", "\uE8B2"));
+            _navigationItemsPanel.Children.Add(CreateNavigationButton("随机点名", "randomPicker", "\uE716"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("账户与数据", "account", "\uE716"));
             navigationStack.Children.Add(_navigationItemsHost);
 
@@ -456,6 +491,13 @@ namespace CSD
                 CreateSettingRow("轮播字体大小", "轮播模式下的展示字号。", _carouselFontSizeBox),
                 CreateSettingRow("调试模式", "在需要排查问题时启用。", _debugModeToggle));
 
+            var randomPickerView = CreateCategoryView(
+                CreateSettingRow("是否启用随机点名功能", "控制随机点名功能的开关。", _randomPickerEnabledToggle),
+                CreateSettingRow("学号模式最小值", "学号模式下可抽取的最小学号。", _randomPickerMinNumberBox),
+                CreateSettingRow("学号模式最大值", "学号模式下可抽取的最大学号。", _randomPickerMaxNumberBox),
+                CreateSettingRow("默认抽取人数", "打开随机点名窗口时的默认抽取人数。", _randomPickerDefaultCountBox),
+                CreateSettingRow("是否启用随机点名动画效果", "控制点名时是否播放滚动动画。", _randomPickerAnimationToggle));
+
             var accountView = CreateCategoryView(
                 CreateSettingRow("当前 Token 状态", "查看授权状态并可重置。", tokenSection),
                 CreateSettingRow("数据管理", "导入、导出本地设置，或前往网页端。", ioStack));
@@ -467,6 +509,7 @@ namespace CSD
             _categoryViews["edit"] = editView;
             _categoryViews["display"] = displayView;
             _categoryViews["playback"] = playbackView;
+            _categoryViews["randomPicker"] = randomPickerView;
             _categoryViews["account"] = accountView;
 
             _detailsHost.Children.Add(serverView);
@@ -476,6 +519,7 @@ namespace CSD
             _detailsHost.Children.Add(editView);
             _detailsHost.Children.Add(displayView);
             _detailsHost.Children.Add(playbackView);
+            _detailsHost.Children.Add(randomPickerView);
             _detailsHost.Children.Add(accountView);
 
             var contentRoot = new Grid
@@ -592,6 +636,13 @@ namespace CSD
                     _pageDescriptionText.Visibility = Visibility.Visible;
                     _pageTitleText.Text = "轮播与调试";
                     _pageDescriptionText.Text = "控制课堂展示轮播效果，并按需开启调试模式。";
+                    break;
+
+                case "randomPicker":
+                    _pageTitleText.Visibility = Visibility.Visible;
+                    _pageDescriptionText.Visibility = Visibility.Visible;
+                    _pageTitleText.Text = "随机点名";
+                    _pageDescriptionText.Text = "配置随机点名功能的模式、范围和默认参数。";
                     break;
 
                 case "account":
@@ -855,6 +906,12 @@ namespace CSD
             _editAutoSavePromptTextBox.TextChanged += (_, _) => { PersistSettings(); ScheduleEditPrefsCloudPush(); };
             _editManualSavePromptTextBox.TextChanged += (_, _) => { PersistSettings(); ScheduleEditPrefsCloudPush(); };
             _kvTokenBox.TextChanged += (_, _) => PersistSettings();
+
+            _randomPickerEnabledToggle.Toggled += (_, _) => PersistSettings();
+            _randomPickerMinNumberBox.ValueChanged += (_, _) => PersistSettings();
+            _randomPickerMaxNumberBox.ValueChanged += (_, _) => PersistSettings();
+            _randomPickerDefaultCountBox.ValueChanged += (_, _) => PersistSettings();
+            _randomPickerAnimationToggle.Toggled += (_, _) => PersistSettings();
         }
 
         private void PersistSettings()
@@ -892,6 +949,13 @@ namespace CSD
                 settings[TokenKey] = tokenTrimmed;
 
             _currentTokenText.Text = string.IsNullOrWhiteSpace(tokenTrimmed) ? "未设置" : "已设置";
+
+            settings[RandomPickerEnabledKey] = _randomPickerEnabledToggle.IsOn;
+            settings[RandomPickerMinNumberKey] = (int)_randomPickerMinNumberBox.Value;
+            settings[RandomPickerMaxNumberKey] = (int)_randomPickerMaxNumberBox.Value;
+            settings[RandomPickerDefaultCountKey] = (int)_randomPickerDefaultCountBox.Value;
+            settings[RandomPickerAnimationKey] = _randomPickerAnimationToggle.IsOn;
+
             _onSettingsChanged?.Invoke();
         }
 
@@ -2895,6 +2959,14 @@ namespace CSD
                 CornerRadius = new CornerRadius(10),
                 Child = grid
             };
+        }
+
+        private static double ConvertToDouble(object value, double defaultValue)
+        {
+            if (value is double d) return d;
+            if (value is int i) return i;
+            if (value is float f) return f;
+            return defaultValue;
         }
 
         private static NumberBox CreateNumberBoxWithoutHeader(double minimum, double maximum, double step, double defaultValue)

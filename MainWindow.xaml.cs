@@ -1448,91 +1448,9 @@ namespace CSD
 
         private async void PickRandomStudentButton_Click(object sender, RoutedEventArgs e)
         {
-            var responseBody = await SendKvRequestAsync(HttpMethod.Get, "/kv/classworks-list-main");
-            if (string.IsNullOrWhiteSpace(responseBody))
-            {
-                StatusText.Text = "获取学生列表失败。";
-                return;
-            }
-
-            try
-            {
-                using var document = JsonDocument.Parse(responseBody);
-                var students = new List<string>();
-
-                foreach (var element in document.RootElement.EnumerateArray())
-                {
-                    if (element.TryGetProperty("name", out var nameElement))
-                    {
-                        var name = nameElement.GetString();
-                        if (!string.IsNullOrWhiteSpace(name))
-                            students.Add(name);
-                    }
-                }
-
-                if (students.Count == 0)
-                {
-                    StatusText.Text = "学生列表为空。";
-                    return;
-                }
-
-                var random = new Random();
-                var xamlRoot = ((Button)sender).XamlRoot;
-
-                // 使用循环而非递归，避免 ContentDialog 并发冲突
-                while (true)
-                {
-                    var picked = students[random.Next(students.Count)];
-
-                    var dialog = new ContentDialog
-                    {
-                        Title = "随机抽取结果",
-                        Content = new StackPanel
-                        {
-                            Spacing = 12,
-                            Children =
-                            {
-                                new TextBlock
-                                {
-                                    Text = $"共 {students.Count} 名学生",
-                                    FontSize = 14,
-                                    Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
-                                },
-                                new TextBlock
-                                {
-                                    Text = picked,
-                                    FontSize = 48,
-                                    FontWeight = Microsoft.UI.Text.FontWeights.Bold,
-                                    HorizontalAlignment = HorizontalAlignment.Center,
-                                    Margin = new Thickness(0, 8, 0, 8)
-                                },
-                                new TextBlock
-                                {
-                                    Text = "恭喜被抽中！",
-                                    FontSize = 16,
-                                    HorizontalAlignment = HorizontalAlignment.Center,
-                                    Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
-                                }
-                            }
-                        },
-                        PrimaryButtonText = "重新抽取",
-                        CloseButtonText = "确定",
-                        DefaultButton = ContentDialogButton.Primary,
-                        XamlRoot = xamlRoot
-                    };
-
-                    var result = await ShowContentDialogSafelyAsync(dialog);
-                    if (result != ContentDialogResult.Primary)
-                        break;
-                    // 如果点击"重新抽取"，继续循环重新抽取
-                }
-            }
-            catch (JsonException)
-            {
-                StatusText.Text = "学生列表数据格式错误。";
-            }
+            var pickerWindow = new RandomPickerWindow();
+            pickerWindow.Activate();
         }
+    }
+}
 
-        }
-
-        }
