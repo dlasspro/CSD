@@ -730,6 +730,12 @@ namespace CSD
             aboutWindow.Activate();
         }
 
+        private void AttendanceButton_Click(object sender, RoutedEventArgs e)
+        {
+            var attendanceWindow = new AttendanceWindow(_currentDate);
+            attendanceWindow.Activate();
+        }
+
         private async void PrevDateButton_Click(object sender, RoutedEventArgs e)
         {
             _currentDate = _currentDate.AddDays(-1);

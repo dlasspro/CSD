@@ -29,6 +29,7 @@
     <Content Include="icons\ic_public_folder.ico" />
     <Content Include="icons\ic_public_refresh.ico" />
     <Content Include="icons\ic_statusbar_alarm.ico" />
+    <Content Include="Assets\MaterialDesignIconsDesktop.ttf" />
   </ItemGroup>
 
   <ItemGroup>

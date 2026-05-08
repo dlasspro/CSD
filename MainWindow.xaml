@@ -108,6 +108,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Button
@@ -180,6 +181,14 @@
                     VerticalAlignment="Center"
                     Click="PickRandomStudentButton_Click"
                     Content="随机抽取"
+                    Margin="8,0,0,0" />
+
+                <Button
+                    x:Name="AttendanceButton"
+                    Grid.Column="7"
+                    VerticalAlignment="Center"
+                    Click="AttendanceButton_Click"
+                    Content="考勤"
                     Margin="8,0,0,0" />
             </Grid>
 

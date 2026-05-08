@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="CSD.AttendanceWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:CSD"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="考勤">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid Padding="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            Text="考勤"
+            FontSize="28"
+            FontWeight="SemiBold"
+            Margin="0,0,0,12" />
+
+        <TextBox
+            x:Name="SearchBox"
+            Grid.Row="1"
+            PlaceholderText="搜索学生"
+            Margin="0,0,0,12"
+            TextChanged="SearchBox_TextChanged" />
+
+        <ScrollViewer
+            Grid.Row="2"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="StudentsPanel" Spacing="8" />
+        </ScrollViewer>
+
+        <Grid
+            Grid.Row="3"
+            Margin="0,12,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Button
+                x:Name="BtnAllPresent"
+                Grid.Column="0"
+                Content="全部到课"
+                Margin="0,0,4,0"
+                Click="BtnAllPresent_Click" />
+            <Button
+                x:Name="BtnAllLeave"
+                Grid.Column="1"
+                Content="全部请假"
+                Margin="4,0,4,0"
+                Click="BtnAllLeave_Click" />
+            <Button
+                x:Name="BtnAllLate"
+                Grid.Column="2"
+                Content="全部迟到"
+                Margin="4,0,4,0"
+                Click="BtnAllLate_Click" />
+            <Button
+                x:Name="BtnAllAbsent"
+                Grid.Column="3"
+                Content="全部不参与"
+                Margin="4,0,0,0"
+                Click="BtnAllAbsent_Click" />
+        </Grid>
+
+        <StackPanel
+            Grid.Row="4"
+            Orientation="Horizontal"
+            HorizontalAlignment="Right"
+            Spacing="8">
+            <TextBlock
+                x:Name="StatsText"
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                FontSize="13" />
+            <Button
+                x:Name="SaveButton"
+                Content="保存"
+                Click="SaveButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
