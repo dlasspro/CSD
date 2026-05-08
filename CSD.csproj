@@ -9,6 +9,7 @@
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <PublishProfile Condition="'$(PublishProfile)'=='' and '$(Platform)'!='' and Exists('Properties\PublishProfiles\win-$(Platform).pubxml')">win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <WindowsPackageType>None</WindowsPackageType>
     <EnableMsixTooling>true</EnableMsixTooling>
 	<SelfContained>true</SelfContained>
@@ -24,6 +25,11 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Assets\Classworks.ico" />
+    <Content Include="Assets\app.ico" />
+    <Content Include="Assets\zhaishis.png" />
+    <Content Include="Assets\saskia.jpeg" />
+    <Content Include="Assets\wuyuan.jpeg" />
     <Content Include="icons\ic_device_matebook.ico" />
     <Content Include="icons\ic_gallery_cloud_synchronization.ico" />
     <Content Include="icons\ic_public_folder.ico" />
