@@ -488,10 +488,13 @@ namespace CSD
                 try
                 {
                     var jsonStr = rosterObj.ToString();
-                    var students = JsonSerializer.Deserialize<string[]>(jsonStr);
-                    if (students != null)
+                    if (jsonStr != null)
                     {
-                        _studentNames = students.ToList();
+                        var students = JsonSerializer.Deserialize<string[]>(jsonStr);
+                        if (students != null)
+                        {
+                            _studentNames = students.ToList();
+                        }
                     }
                 }
                 catch { }

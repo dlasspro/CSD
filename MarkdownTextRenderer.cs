@@ -398,9 +398,9 @@ namespace CSD
             int i = 0;
 
             // 辅助方法：创建带默认样式的 Run
-            Run MakeRun(string t)
+            Run MakeRun(string? t)
             {
-                var run = new Run { Text = t };
+                var run = new Run { Text = t ?? string.Empty };
                 if (fontSize > 0) run.FontSize = fontSize;
                 if (foreground != null) run.Foreground = foreground;
                 return run;

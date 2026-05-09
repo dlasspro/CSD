@@ -283,7 +283,7 @@ namespace CSD
             btn.Content = panel;
             btn.Click += (_, _) =>
             {
-                try { Windows.System.Launcher.LaunchUriAsync(new Uri(url)); } catch { }
+                try { _ = Windows.System.Launcher.LaunchUriAsync(new Uri(url)); } catch { }
             };
 
             return btn;
