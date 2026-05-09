@@ -1,7 +1,9 @@
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,11 +33,16 @@ namespace CSD
         private readonly Button _btnIncludeLate;
         private readonly Button _btnExcludeLeave;
         private readonly Button _btnExcludeAbsent;
-        private readonly Border _resultPanel;
-        private readonly TextBlock _resultText;
         private readonly Border _animationOverlay;
+        private readonly StackPanel _overlayContent;
         private readonly TextBlock _animationText;
+        private readonly TextBlock _resultText;
         private readonly StackPanel _resultListPanel;
+        private readonly TextBlock _dismissHintText;
+
+        private readonly Grid _appTitleBar;
+        private readonly ColumnDefinition _leftInsetColumn;
+        private readonly ColumnDefinition _rightInsetColumn;
 
         private int _pickCount = 1;
         private bool _isNameMode = true;
@@ -74,50 +81,42 @@ namespace CSD
 
             _rootPanel = new StackPanel { Spacing = 0 };
 
-            var titleBar = new Grid
-            {
-                Padding = new Thickness(24, 20, 16, 16),
-                ColumnSpacing = 12
-            };
-            titleBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            titleBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            titleBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            _leftInsetColumn = new ColumnDefinition { Width = new GridLength(0) };
+            _rightInsetColumn = new ColumnDefinition { Width = new GridLength(0) };
 
-            var titleIcon = new FontIcon
+            _appTitleBar = new Grid
+            {
+                MinHeight = 52,
+                Padding = new Thickness(0, 8, 0, 8)
+            };
+            _appTitleBar.ColumnDefinitions.Add(_leftInsetColumn);
+            _appTitleBar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            _appTitleBar.ColumnDefinitions.Add(_rightInsetColumn);
+
+            var titleBarTextStack = new StackPanel
+            {
+                Margin = new Thickness(24, 0, 16, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Orientation = Orientation.Horizontal,
+                Spacing = 12
+            };
+            titleBarTextStack.Children.Add(new FontIcon
             {
                 Glyph = "\uE716",
-                FontSize = 24,
+                FontSize = 16,
                 VerticalAlignment = VerticalAlignment.Center,
-                Foreground = _primaryTextBrush
-            };
-            Grid.SetColumn(titleIcon, 0);
-            titleBar.Children.Add(titleIcon);
-
-            var titleText = new TextBlock
+                Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]
+            });
+            titleBarTextStack.Children.Add(new TextBlock
             {
                 Text = "随机点名",
-                FontSize = 24,
+                FontSize = 15,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center,
-                Foreground = _primaryTextBrush
-            };
-            Grid.SetColumn(titleText, 1);
-            titleBar.Children.Add(titleText);
-
-            var closeBtn = new Button
-            {
-                Content = new FontIcon { Glyph = "\uE711", FontSize = 14 },
-                Background = _transparentBrush,
-                BorderThickness = new Thickness(0),
-                Padding = new Thickness(8),
-                CornerRadius = new CornerRadius(6),
-                Foreground = _secondaryTextBrush
-            };
-            Grid.SetColumn(closeBtn, 2);
-            closeBtn.Click += (_, _) => Close();
-            titleBar.Children.Add(closeBtn);
-
-            _rootPanel.Children.Add(titleBar);
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            });
+            Grid.SetColumn(titleBarTextStack, 1);
+            _appTitleBar.Children.Add(titleBarTextStack);
 
             var contentPanel = new StackPanel
             {
@@ -250,40 +249,15 @@ namespace CSD
 
             contentPanel.Children.Add(filterRow);
 
-            _resultPanel = new Border
-            {
-                Background = (Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"],
-                CornerRadius = new CornerRadius(16),
-                Padding = new Thickness(24),
-                MinHeight = 100,
-                Visibility = Visibility.Collapsed
-            };
-
-            _resultText = new TextBlock
-            {
-                FontSize = 24,
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Foreground = _primaryTextBrush,
-                TextAlignment = TextAlignment.Center,
-                TextWrapping = TextWrapping.Wrap
-            };
-
-            _resultListPanel = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center };
-            var resultInner = new StackPanel { Spacing = 16 };
-            resultInner.Children.Add(_resultText);
-            resultInner.Children.Add(_resultListPanel);
-            _resultPanel.Child = resultInner;
-
-            contentPanel.Children.Add(_resultPanel);
-
             _rootPanel.Children.Add(contentPanel);
 
-            _animationOverlay = new Border
+            _dismissHintText = new TextBlock
             {
-                Background = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
-                Visibility = Visibility.Collapsed,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
+                Text = "点击空白处返回抽取界面",
+                FontSize = 14,
+                Foreground = new SolidColorBrush(Color.FromArgb(180, 255, 255, 255)),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 40, 0, 0)
             };
 
             _animationText = new TextBlock
@@ -295,13 +269,45 @@ namespace CSD
                 VerticalAlignment = VerticalAlignment.Center
             };
 
-            var animationInner = new Grid
+            _resultText = new TextBlock
             {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
+                FontSize = 48,
+                FontWeight = Microsoft.UI.Text.FontWeights.Bold,
+                Foreground = new SolidColorBrush(Colors.White),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Visibility = Visibility.Collapsed
             };
-            animationInner.Children.Add(_animationText);
-            _animationOverlay.Child = animationInner;
+
+            _resultListPanel = new StackPanel { Spacing = 10, HorizontalAlignment = HorizontalAlignment.Center };
+
+            var overlayResultPanel = new StackPanel
+            {
+                Spacing = 16,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            overlayResultPanel.Children.Add(_animationText);
+            overlayResultPanel.Children.Add(_resultText);
+            overlayResultPanel.Children.Add(_resultListPanel);
+
+            _overlayContent = new StackPanel
+            {
+                Spacing = 0,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            _overlayContent.Children.Add(overlayResultPanel);
+            _overlayContent.Children.Add(_dismissHintText);
+
+            _animationOverlay = new Border
+            {
+                Background = new SolidColorBrush(Color.FromArgb(200, 0, 0, 0)),
+                Visibility = Visibility.Collapsed,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Child = _overlayContent
+            };
+            _animationOverlay.Tapped += AnimationOverlay_Tapped;
 
             _windowRoot = new Border
             {
@@ -309,13 +315,52 @@ namespace CSD
                 Child = _rootPanel
             };
 
+            var root = new Grid();
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            Grid.SetRow(_appTitleBar, 0);
+            Grid.SetRow(_windowRoot, 1);
+            root.Children.Add(_appTitleBar);
+            root.Children.Add(_windowRoot);
+
             var gridRoot = new Grid();
-            gridRoot.Children.Add(_windowRoot);
+            gridRoot.Children.Add(root);
             gridRoot.Children.Add(_animationOverlay);
 
             Content = gridRoot;
 
+            ConfigureIntegratedTitleBar();
+
             _ = LoadStudentsAsync();
+        }
+
+        private void ConfigureIntegratedTitleBar()
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported())
+                return;
+
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(_appTitleBar);
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            UpdateTitleBarLayout(AppWindow.TitleBar);
+
+            try
+            {
+                AppWindow.SetIcon("Assets/StoreLogo.png");
+            }
+            catch { }
+        }
+
+        private void UpdateTitleBarLayout(AppWindowTitleBar titleBar)
+        {
+            _leftInsetColumn.Width = new GridLength(titleBar.LeftInset);
+            _rightInsetColumn.Width = new GridLength(titleBar.RightInset);
+        }
+
+        private void AnimationOverlay_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            _animationOverlay.Visibility = Visibility.Collapsed;
+            _btnStartPick.IsEnabled = true;
         }
 
         private static UIElement CreateStartButtonContent()
@@ -423,6 +468,7 @@ namespace CSD
             _btnNumberMode.Background = !isName ? _accentBrush : _transparentBrush;
             _btnNameMode.Foreground = isName ? _accentForeground : _secondaryTextBrush;
             _btnNumberMode.Foreground = !isName ? _accentForeground : _secondaryTextBrush;
+            UpdateAvailableCount();
         }
 
         private void ToggleFilter(Button btn, ref bool value)
@@ -486,22 +532,49 @@ namespace CSD
 
         private void UpdateAvailableCount()
         {
-            _availableStudents = _studentNames.ToList();
-            _availableCountText.Text = $"当前可抽取学生: {_availableStudents.Count}人";
+            if (_isNameMode)
+            {
+                _availableStudents = _studentNames.ToList();
+                _availableCountText.Text = $"当前可抽取学生: {_availableStudents.Count}人";
+            }
+            else
+            {
+                var min = RandomPickerSettings.MinNumber;
+                var max = RandomPickerSettings.MaxNumber;
+                var range = Math.Max(0, max - min + 1);
+                _availableCountText.Text = $"当前可抽取学号: {range}个（{min}~{max}）";
+            }
         }
 
         private async void StartPick_Click(object sender, RoutedEventArgs e)
         {
-            if (_availableStudents.Count == 0)
+            int maxAvailable;
+            if (_isNameMode)
             {
-                await ShowDialogAsync("没有可抽取的学生，请先添加学生名单。");
-                return;
+                if (_studentNames.Count == 0)
+                {
+                    await ShowDialogAsync("没有可抽取的学生，请先添加学生名单。");
+                    return;
+                }
+                _availableStudents = _studentNames.ToList();
+                maxAvailable = _availableStudents.Count;
+            }
+            else
+            {
+                var min = RandomPickerSettings.MinNumber;
+                var max = RandomPickerSettings.MaxNumber;
+                maxAvailable = Math.Max(0, max - min + 1);
+                if (maxAvailable == 0)
+                {
+                    await ShowDialogAsync("学号范围设置无效，请在设置中调整。");
+                    return;
+                }
             }
 
-            var count = Math.Min(_pickCount, _availableStudents.Count);
+            var count = Math.Min(_pickCount, maxAvailable);
             if (count == 0)
             {
-                await ShowDialogAsync("没有可抽取的学生。");
+                await ShowDialogAsync("没有可抽取的对象。");
                 return;
             }
 
@@ -511,6 +584,7 @@ namespace CSD
             }
             else
             {
+                _animationOverlay.Visibility = Visibility.Visible;
                 ShowResults(count);
             }
         }
@@ -518,7 +592,14 @@ namespace CSD
         private async Task RunAnimationAsync(int count)
         {
             _animationOverlay.Visibility = Visibility.Visible;
+            _dismissHintText.Visibility = Visibility.Collapsed;
+            _animationText.Visibility = Visibility.Visible;
+            _resultText.Visibility = Visibility.Collapsed;
+            _resultListPanel.Visibility = Visibility.Collapsed;
             _btnStartPick.IsEnabled = false;
+
+            var minNum = RandomPickerSettings.MinNumber;
+            var maxNum = RandomPickerSettings.MaxNumber;
 
             var duration = 1500;
             var interval = 50;
@@ -526,16 +607,22 @@ namespace CSD
 
             while (elapsed < duration)
             {
-                var randomStudent = _availableStudents[_random.Next(_availableStudents.Count)];
-                _animationText.Text = randomStudent;
+                string displayItem;
+                if (_isNameMode)
+                {
+                    displayItem = _availableStudents[_random.Next(_availableStudents.Count)];
+                }
+                else
+                {
+                    displayItem = _random.Next(minNum, maxNum + 1).ToString();
+                }
+                _animationText.Text = displayItem;
+                _animationText.FontSize = 72;
                 await Task.Delay(interval);
                 elapsed += interval;
                 if (interval < 200)
                     interval += 5;
             }
-
-            _animationOverlay.Visibility = Visibility.Collapsed;
-            _btnStartPick.IsEnabled = true;
 
             ShowResults(count);
         }
@@ -543,30 +630,51 @@ namespace CSD
         private void ShowResults(int count)
         {
             var picked = new List<string>();
-            var pool = _availableStudents.ToList();
 
-            for (int i = 0; i < count && pool.Count > 0; i++)
+            if (_isNameMode)
             {
-                var idx = _random.Next(pool.Count);
-                picked.Add(pool[idx]);
-                pool.RemoveAt(idx);
-            }
-
-            _resultListPanel.Children.Clear();
-
-            if (picked.Count == 1)
-            {
-                _resultText.Text = $"恭喜：{picked[0]}";
-                _resultText.Visibility = Visibility.Visible;
-                _resultListPanel.Visibility = Visibility.Collapsed;
+                var pool = _availableStudents.ToList();
+                for (int i = 0; i < count && pool.Count > 0; i++)
+                {
+                    var idx = _random.Next(pool.Count);
+                    picked.Add(pool[idx]);
+                    pool.RemoveAt(idx);
+                }
             }
             else
             {
-                _resultText.Text = $"共抽取 {picked.Count} 人";
-                _resultText.Visibility = Visibility.Visible;
-                _resultListPanel.Visibility = Visibility.Visible;
+                var minNum = RandomPickerSettings.MinNumber;
+                var maxNum = RandomPickerSettings.MaxNumber;
+                var used = new HashSet<int>();
+                for (int i = 0; i < count; i++)
+                {
+                    int num;
+                    do
+                    {
+                        num = _random.Next(minNum, maxNum + 1);
+                    } while (used.Contains(num));
+                    used.Add(num);
+                    picked.Add(num.ToString());
+                }
+            }
 
-                foreach (var name in picked)
+            _animationText.Visibility = Visibility.Collapsed;
+            _resultText.Visibility = Visibility.Collapsed;
+            _resultListPanel.Children.Clear();
+            _resultListPanel.Visibility = Visibility.Collapsed;
+
+            if (picked.Count == 1)
+            {
+                _resultText.Text = picked[0];
+                _resultText.FontSize = 72;
+            }
+            else
+            {
+                _resultText.Text = $"共抽取 {picked.Count} 个";
+                _resultText.FontSize = 32;
+
+                _resultListPanel.Visibility = Visibility.Visible;
+                foreach (var item in picked)
                 {
                     var nameCard = new Border
                     {
@@ -575,10 +683,12 @@ namespace CSD
                         Padding = new Thickness(16, 10, 16, 10),
                         MinWidth = 120,
                         HorizontalAlignment = HorizontalAlignment.Center,
+                        Opacity = 0,
+                        RenderTransform = new Microsoft.UI.Xaml.Media.TranslateTransform { Y = 15 },
                         Child = new TextBlock
                         {
-                            Text = name,
-                            FontSize = 20,
+                            Text = item,
+                            FontSize = 28,
                             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                             Foreground = _accentForeground,
                             TextAlignment = TextAlignment.Center
@@ -588,32 +698,67 @@ namespace CSD
                 }
             }
 
-            _resultPanel.Visibility = Visibility.Visible;
-            _resultPanel.Opacity = 0;
+            _resultText.Visibility = Visibility.Visible;
+            _resultText.Opacity = 0;
+            _resultText.RenderTransform = new Microsoft.UI.Xaml.Media.TranslateTransform { Y = 20 };
 
-            var sb = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
-            var da = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
+            var sb = new Storyboard();
+
+            var fadeIn = new DoubleAnimation
             {
-                To = 1.0,
-                Duration = new Microsoft.UI.Xaml.Duration(TimeSpan.FromMilliseconds(300)),
+                From = 0,
+                To = 1,
+                Duration = new Duration(TimeSpan.FromMilliseconds(400)),
                 EnableDependentAnimation = true
             };
-            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(da, _resultPanel);
-            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(da, "Opacity");
-            sb.Children.Add(da);
+            Storyboard.SetTarget(fadeIn, _resultText);
+            Storyboard.SetTargetProperty(fadeIn, "Opacity");
+            sb.Children.Add(fadeIn);
 
-            var va = new Microsoft.UI.Xaml.Media.Animation.ObjectAnimationUsingKeyFrames();
-            var kf = new Microsoft.UI.Xaml.Media.Animation.DiscreteObjectKeyFrame
+            var slideUp = new DoubleAnimation
             {
-                KeyTime = Microsoft.UI.Xaml.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.Zero),
-                Value = Visibility.Visible
+                From = 20,
+                To = 0,
+                Duration = new Duration(TimeSpan.FromMilliseconds(400)),
+                EnableDependentAnimation = true
             };
-            va.KeyFrames.Add(kf);
-            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(va, _resultPanel);
-            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(va, "Visibility");
-            sb.Children.Add(va);
+            Storyboard.SetTarget(slideUp, _resultText.RenderTransform);
+            Storyboard.SetTargetProperty(slideUp, "Y");
+            sb.Children.Add(slideUp);
+
+            for (int i = 0; i < _resultListPanel.Children.Count; i++)
+            {
+                var child = _resultListPanel.Children[i];
+                var delay = 100 + i * 80;
+
+                var cardFadeIn = new DoubleAnimation
+                {
+                    From = 0,
+                    To = 1,
+                    BeginTime = TimeSpan.FromMilliseconds(delay),
+                    Duration = new Duration(TimeSpan.FromMilliseconds(300)),
+                    EnableDependentAnimation = true
+                };
+                Storyboard.SetTarget(cardFadeIn, child);
+                Storyboard.SetTargetProperty(cardFadeIn, "Opacity");
+                sb.Children.Add(cardFadeIn);
+
+                var cardSlideUp = new DoubleAnimation
+                {
+                    From = 15,
+                    To = 0,
+                    BeginTime = TimeSpan.FromMilliseconds(delay),
+                    Duration = new Duration(TimeSpan.FromMilliseconds(300)),
+                    EnableDependentAnimation = true
+                };
+                Storyboard.SetTarget(cardSlideUp, child.RenderTransform);
+                Storyboard.SetTargetProperty(cardSlideUp, "Y");
+                sb.Children.Add(cardSlideUp);
+            }
 
             sb.Begin();
+
+            _dismissHintText.Visibility = Visibility.Visible;
         }
 
         private async Task ShowDialogAsync(string message)

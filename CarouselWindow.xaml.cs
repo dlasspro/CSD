@@ -1,3 +1,5 @@
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -28,6 +30,9 @@ namespace CSD
             // 窗口初始化
             try { AppWindow.SetIcon("Assets/StoreLogo.png"); } catch { }
 
+            // 自定义标题栏
+            ConfigureIntegratedTitleBar();
+
             // 最大化窗口
             if (AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
             {
@@ -44,6 +49,23 @@ namespace CSD
             // 点击内容切换到下一项
             StartCarouselTimer();
             ShowCarouselItem();
+        }
+
+        private void ConfigureIntegratedTitleBar()
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported())
+                return;
+
+            ExtendsContentIntoTitleBar = true;
+            SetTitleBar(AppTitleBar);
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+            UpdateTitleBarLayout(AppWindow.TitleBar);
+        }
+
+        private void UpdateTitleBarLayout(AppWindowTitleBar titleBar)
+        {
+            LeftInsetColumn.Width = new GridLength(titleBar.LeftInset);
+            RightInsetColumn.Width = new GridLength(titleBar.RightInset);
         }
 
         private void ExitCarouselButton_Click(object sender, RoutedEventArgs e)
