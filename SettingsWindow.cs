@@ -53,6 +53,9 @@ namespace CSD
         private const string RandomPickerDefaultCountKey = "randomPicker.defaultCount";
         private const string RandomPickerAnimationKey = "randomPicker.animation";
 
+        private const string AutoStartEnabledKey = "Settings_AutoStartEnabled";
+        private const string AutoStartMethodKey = "Settings_AutoStartMethod";
+
         private static readonly string[] DefaultSubjectNames =
         [
             "语文", "数学", "英语", "物理", "化学", "生物", "政治", "历史", "地理", "其他"
@@ -63,6 +66,13 @@ namespace CSD
             "Classworks 云端存储",
             "本地存储",
             "自定义远程服务器"
+        ];
+
+        private static readonly string[] AutoStartMethodOptions =
+        [
+            "注册表 (Registry)  ★★★",
+            "启动文件夹 (Startup)  ★★",
+            "计划任务 (Task Scheduler)  ★"
         ];
 
         private readonly Action _onSettingsChanged;
@@ -90,6 +100,8 @@ namespace CSD
         private readonly NumberBox _randomPickerMaxNumberBox;
         private readonly NumberBox _randomPickerDefaultCountBox;
         private readonly ToggleSwitch _randomPickerAnimationToggle;
+        private readonly ToggleSwitch _autoStartToggle;
+        private readonly ComboBox _autoStartMethodCombo;
         private readonly HttpClient _settingsHttpClient = new();
         private readonly TextBlock _currentTokenText;
         private readonly TextBlock _pageTitleText;
@@ -256,6 +268,39 @@ namespace CSD
                 Margin = new Thickness(0)
             };
 
+            // --- 自启动 ---
+            _autoStartToggle = new ToggleSwitch
+            {
+                IsOn = settings.ContainsKey(AutoStartEnabledKey) && (bool)(settings[AutoStartEnabledKey] ?? false),
+                OnContent = null,
+                OffContent = null,
+                MinWidth = 0,
+                Margin = new Thickness(0)
+            };
+
+            _autoStartMethodCombo = new ComboBox
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                MinHeight = 40,
+                MinWidth = 260
+            };
+            foreach (var label in AutoStartMethodOptions)
+                _autoStartMethodCombo.Items.Add(label);
+            var savedMethod = settings[AutoStartMethodKey] as string;
+            if (!string.IsNullOrWhiteSpace(savedMethod))
+            {
+                for (int i = 0; i < AutoStartMethodOptions.Length; i++)
+                {
+                    if (AutoStartMethodOptions[i].StartsWith(savedMethod, StringComparison.Ordinal))
+                    {
+                        _autoStartMethodCombo.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            if (_autoStartMethodCombo.SelectedIndex < 0)
+                _autoStartMethodCombo.SelectedIndex = 0;
+
             _dataProviderCombo = new ComboBox
             {
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -421,6 +466,7 @@ namespace CSD
             _navigationItemsPanel.Children.Add(CreateNavigationButton("显示", "display", "\uE7F8"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("轮播与调试", "playback", "\uE8B2"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("随机点名", "randomPicker", "\uE716"));
+            _navigationItemsPanel.Children.Add(CreateNavigationButton("自启动", "autostart", "\uE7E8"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("账户与数据", "account", "\uE716"));
             navigationStack.Children.Add(_navigationItemsHost);
 
@@ -498,6 +544,18 @@ namespace CSD
                 CreateSettingRow("默认抽取人数", "打开随机点名窗口时的默认抽取人数。", _randomPickerDefaultCountBox),
                 CreateSettingRow("是否启用随机点名动画效果", "控制点名时是否播放滚动动画。", _randomPickerAnimationToggle));
 
+            var autoStartMethodStack = new StackPanel { Spacing = 4 };
+            autoStartMethodStack.Children.Add(new TextBlock
+            {
+                Text = "优先级方式（星级越高越推荐）",
+                FontSize = 12,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            });
+            autoStartMethodStack.Children.Add(_autoStartMethodCombo);
+            var autoStartView = CreateCategoryView(
+                CreateSettingRow("开机自启动", "启用后 CSD 将在系统启动时自动运行。", _autoStartToggle),
+                CreateSettingRow("自启动方式", "选择自启动的优先级实现方式，星级越高越稳定可靠。", autoStartMethodStack));
+
             var accountView = CreateCategoryView(
                 CreateSettingRow("当前 Token 状态", "查看授权状态并可重置。", tokenSection),
                 CreateSettingRow("数据管理", "导入、导出本地设置，或前往网页端。", ioStack));
@@ -510,6 +568,7 @@ namespace CSD
             _categoryViews["display"] = displayView;
             _categoryViews["playback"] = playbackView;
             _categoryViews["randomPicker"] = randomPickerView;
+            _categoryViews["autostart"] = autoStartView;
             _categoryViews["account"] = accountView;
 
             _detailsHost.Children.Add(serverView);
@@ -520,6 +579,7 @@ namespace CSD
             _detailsHost.Children.Add(displayView);
             _detailsHost.Children.Add(playbackView);
             _detailsHost.Children.Add(randomPickerView);
+            _detailsHost.Children.Add(autoStartView);
             _detailsHost.Children.Add(accountView);
 
             var contentRoot = new Grid
@@ -643,6 +703,13 @@ namespace CSD
                     _pageDescriptionText.Visibility = Visibility.Visible;
                     _pageTitleText.Text = "随机点名";
                     _pageDescriptionText.Text = "配置随机点名功能的模式、范围和默认参数。";
+                    break;
+
+                case "autostart":
+                    _pageTitleText.Visibility = Visibility.Visible;
+                    _pageDescriptionText.Visibility = Visibility.Visible;
+                    _pageTitleText.Text = "自启动";
+                    _pageDescriptionText.Text = "配置开机自启动行为，选择不同的启动方式以实现不同程度的兼容性。";
                     break;
 
                 case "account":
@@ -912,6 +979,9 @@ namespace CSD
             _randomPickerMaxNumberBox.ValueChanged += (_, _) => PersistSettings();
             _randomPickerDefaultCountBox.ValueChanged += (_, _) => PersistSettings();
             _randomPickerAnimationToggle.Toggled += (_, _) => PersistSettings();
+
+            _autoStartToggle.Toggled += (_, _) => { PersistSettings(); _ = ApplyAutoStartAsync(); };
+            _autoStartMethodCombo.SelectionChanged += (_, _) => { PersistSettings(); _ = ApplyAutoStartAsync(); };
         }
 
         private void PersistSettings()
@@ -955,6 +1025,18 @@ namespace CSD
             settings[RandomPickerMaxNumberKey] = (int)_randomPickerMaxNumberBox.Value;
             settings[RandomPickerDefaultCountKey] = (int)_randomPickerDefaultCountBox.Value;
             settings[RandomPickerAnimationKey] = _randomPickerAnimationToggle.IsOn;
+
+            settings[AutoStartEnabledKey] = _autoStartToggle.IsOn;
+            if (_autoStartMethodCombo.SelectedItem is string methodLabel)
+            {
+                var methodName = methodLabel.Split("  ")[0];
+                settings[AutoStartMethodKey] = methodName;
+            }
+            else if (_autoStartMethodCombo.SelectedIndex >= 0 && _autoStartMethodCombo.SelectedIndex < AutoStartMethodOptions.Length)
+            {
+                var methodName = AutoStartMethodOptions[_autoStartMethodCombo.SelectedIndex].Split("  ")[0];
+                settings[AutoStartMethodKey] = methodName;
+            }
 
             _onSettingsChanged?.Invoke();
         }
@@ -3011,6 +3093,170 @@ namespace CSD
                 Padding = new Thickness(20),
                 Child = stack
             };
+        }
+
+        private async Task ApplyAutoStartAsync()
+        {
+            if (_isAutoSaveSuspended)
+                return;
+
+            await Task.Run(() =>
+            {
+                try
+                {
+                    RemoveAllAutoStartEntries();
+                    if (_autoStartToggle.IsOn)
+                        ApplySelectedAutoStartMethod();
+                }
+                catch
+                {
+                    // 静默处理自启动设置失败
+                }
+            });
+        }
+
+        private void RemoveAllAutoStartEntries()
+        {
+            var exePath = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exePath))
+                return;
+
+            RemoveRegistryAutoStart();
+            RemoveStartupFolderShortcut();
+            RemoveScheduledTask();
+        }
+
+        private void ApplySelectedAutoStartMethod()
+        {
+            var methodIndex = _autoStartMethodCombo.SelectedIndex;
+            if (methodIndex < 0 || methodIndex >= AutoStartMethodOptions.Length)
+                methodIndex = 0;
+
+            switch (methodIndex)
+            {
+                case 0:
+                    SetRegistryAutoStart();
+                    break;
+                case 1:
+                    SetStartupFolderAutoStart();
+                    break;
+                case 2:
+                    SetScheduledTaskAutoStart();
+                    break;
+            }
+        }
+
+        private static void RemoveRegistryAutoStart()
+        {
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                    @"Software\Microsoft\Windows\CurrentVersion\Run", writable: true);
+                key?.DeleteValue("CSD", throwOnMissingValue: false);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void SetRegistryAutoStart()
+        {
+            var exePath = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exePath))
+                return;
+
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(
+                    @"Software\Microsoft\Windows\CurrentVersion\Run");
+                key?.SetValue("CSD", $"\"{exePath}\"");
+            }
+            catch
+            {
+            }
+        }
+
+        private static void RemoveStartupFolderShortcut()
+        {
+            try
+            {
+                var startupPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                var shortcutPath = System.IO.Path.Combine(startupPath, "CSD.lnk");
+                if (File.Exists(shortcutPath))
+                    File.Delete(shortcutPath);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void SetStartupFolderAutoStart()
+        {
+            var exePath = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exePath))
+                return;
+
+            try
+            {
+                var startupPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                Directory.CreateDirectory(startupPath);
+                var shortcutPath = System.IO.Path.Combine(startupPath, "CSD.lnk");
+
+                var shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType == null)
+                    return;
+
+                dynamic shell = Activator.CreateInstance(shellType)!;
+                dynamic shortcut = shell.CreateShortcut(shortcutPath);
+                shortcut.TargetPath = exePath;
+                shortcut.WorkingDirectory = System.IO.Path.GetDirectoryName(exePath);
+                shortcut.Description = "CSD - 课堂作业展示系统";
+                shortcut.Save();
+            }
+            catch
+            {
+            }
+        }
+
+        private static void RemoveScheduledTask()
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo("schtasks.exe", "/delete /tn \"CSD_AutoStart\" /f")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                };
+                var process = System.Diagnostics.Process.Start(psi);
+                process?.WaitForExit(5000);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void SetScheduledTaskAutoStart()
+        {
+            var exePath = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exePath))
+                return;
+
+            try
+            {
+                var arguments = $"/create /tn \"CSD_AutoStart\" /tr \"\\\"{exePath}\\\"\" /sc onlogon /rl limited /f /delay 0000:30";
+                var psi = new System.Diagnostics.ProcessStartInfo("schtasks.exe", arguments)
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                };
+                var process = System.Diagnostics.Process.Start(psi);
+                process?.WaitForExit(5000);
+            }
+            catch
+            {
+            }
         }
 
         private async void DestroyTokenButton_Click(object sender, RoutedEventArgs e)
