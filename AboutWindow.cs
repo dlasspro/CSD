@@ -14,6 +14,7 @@ namespace CSD
         private Button? _checkUpdateButton;
         private TextBlock? _updateStatusText;
         private ProgressRing? _updateProgressRing;
+
         public AboutWindow()
         {
             Title = "关于 CSD";
@@ -41,7 +42,7 @@ namespace CSD
             {
                 Width = 72,
                 Height = 72,
-                Source = new BitmapImage(new Uri("ms-appx:///Assets/Classworks.ico")),
+                Source = new BitmapImage(AppSettings.GetAssetUri("Assets/Classworks.ico")),
                 HorizontalAlignment = HorizontalAlignment.Center
             };
             heroStack.Children.Add(iconImage);
@@ -89,9 +90,9 @@ namespace CSD
             ));
 
             var creditsPanel = new StackPanel { Spacing = 10 };
-            creditsPanel.Children.Add(CreateCreditItem("翟十光", "客户端开发者", "ms-appx:///Assets/zhaishis.png"));
-            creditsPanel.Children.Add(CreateCreditItem("Saskia", "提供了开发环境和 Token", "ms-appx:///Assets/saskia.jpeg"));
-            creditsPanel.Children.Add(CreateCreditItem("孙悟元", "Classworks 开发者", "ms-appx:///Assets/wuyuan.jpeg"));
+            creditsPanel.Children.Add(CreateCreditItem("翟十光", "客户端开发者", AppSettings.GetAssetUri("Assets/zhaishis.png").AbsoluteUri));
+            creditsPanel.Children.Add(CreateCreditItem("Saskia", "提供了开发环境和 Token", AppSettings.GetAssetUri("Assets/saskia.jpeg").AbsoluteUri));
+            creditsPanel.Children.Add(CreateCreditItem("孙悟元", "Classworks 开发者", AppSettings.GetAssetUri("Assets/wuyuan.jpeg").AbsoluteUri));
             contentStack.Children.Add(CreateSectionCard("致谢", creditsPanel));
 
             var linksPanel = new StackPanel { Spacing = 8 };
@@ -387,8 +388,9 @@ namespace CSD
         {
             try
             {
-                var version = Windows.ApplicationModel.Package.Current.Id.Version;
-                return $"v{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                var version = assembly.GetName().Version;
+                return $"v{version?.Major ?? 0}.{version?.Minor ?? 0}.{version?.Build ?? 0}.{version?.Revision ?? 0}";
             }
             catch
             {
