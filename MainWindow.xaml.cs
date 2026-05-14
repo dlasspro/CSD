@@ -45,16 +45,9 @@ namespace CSD
         private DebugWindow? _debugWindow;
         private bool _isUpdatingCalendarSelection;
         private bool _isContentDialogOpen;
-        private int _cardAnimationSequence = 0;
 
         // 当前作业的科目名称集合（用于判断未完成作业）
         private HashSet<string> _currentHomeworkSubjects = new();
-
-        private sealed class CardAnimationContext
-        {
-            public FrameworkElement CardElement { get; init; } = null!;
-            public UIElement TextHost { get; init; } = null!;
-        }
 
         private string BaseUrl
         {
@@ -1060,9 +1053,6 @@ namespace CSD
                 if (availableWidth <= 0) availableWidth = 800;
 
                 var rows = BuildCardRows(items, availableWidth, minCardWidth, gap, contentFontSize);
-                var cardAnimations = new List<CardAnimationContext>();
-                int animationIndex = 0;
-                int currentCardAnimationSequence = ++_cardAnimationSequence;
 
                 foreach (var rowItems in rows)
                 {
@@ -1082,16 +1072,13 @@ namespace CSD
 
                     for (int column = 0; column < rowItems.Count; column++)
                     {
-                        var card = CreateCard(rowItems[column], subjectFontSize, contentFontSize, animationIndex++);
-                        cardAnimations.Add(card);
-                        Grid.SetColumn(card.CardElement, column);
-                        rowGrid.Children.Add(card.CardElement);
+                        var card = CreateCard(rowItems[column], subjectFontSize, contentFontSize);
+                        Grid.SetColumn(card, column);
+                        rowGrid.Children.Add(card);
                     }
 
                     HomeworkContainer.Children.Add(rowGrid);
                 }
-
-                await PlayCardEntranceSequenceAsync(cardAnimations, currentCardAnimationSequence);
             }
             catch (JsonException)
             {
@@ -1182,7 +1169,7 @@ namespace CSD
             return Math.Clamp(desiredWidth, minCardWidth, maxWidth);
         }
 
-        private CardAnimationContext CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize, int index)
+        private Button CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize)
         {
             var border = new Border
             {
@@ -1196,22 +1183,16 @@ namespace CSD
             border.Shadow = new ThemeShadow();
 
             var stack = new StackPanel { Spacing = 10 };
-            var textHost = new StackPanel
-            {
-                Spacing = 10,
-                Opacity = 0
-            };
-            textHost.Children.Add(new TextBlock
+            stack.Children.Add(new TextBlock
             {
                 FontSize = subjectFontSize,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Text = item.Subject
             });
-            textHost.Children.Add(MarkdownTextRenderer.CreateRichTextBlock(
+            stack.Children.Add(MarkdownTextRenderer.CreateRichTextBlock(
                 item.Content,
                 contentFontSize,
                 (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
-            stack.Children.Add(textHost);
 
             border.Child = stack;
 
@@ -1229,101 +1210,7 @@ namespace CSD
             };
             button.Click += CardButton_Click;
 
-            PrepareCardVisual(button);
-            PrepareTextVisual(textHost);
-
-            return new CardAnimationContext
-            {
-                CardElement = button,
-                TextHost = textHost
-            };
-        }
-
-        private void PrepareCardVisual(UIElement element)
-        {
-            if (element is FrameworkElement frameworkElement)
-            {
-                frameworkElement.RenderTransform = new TranslateTransform { Y = 120 };
-                frameworkElement.Opacity = 1;
-            }
-        }
-
-        private void PrepareTextVisual(UIElement element)
-        {
-            var visual = ElementCompositionPreview.GetElementVisual(element);
-            visual.Opacity = 0f;
-        }
-
-        private async Task PlayCardEntranceSequenceAsync(IReadOnlyList<CardAnimationContext> cards, int animationSequence)
-        {
-            foreach (var card in cards)
-            {
-                if (animationSequence != _cardAnimationSequence)
-                {
-                    return;
-                }
-
-                await SlideCardIntoPlaceAsync(card.CardElement);
-            }
-
-            foreach (var card in cards)
-            {
-                if (animationSequence != _cardAnimationSequence)
-                {
-                    return;
-                }
-
-                await FadeTextInAsync(card.TextHost);
-            }
-        }
-
-        private static async Task SlideCardIntoPlaceAsync(UIElement element)
-        {
-            if (element is not FrameworkElement frameworkElement)
-            {
-                return;
-            }
-
-            if (frameworkElement.RenderTransform is not TranslateTransform translateTransform)
-            {
-                translateTransform = new TranslateTransform { Y = 120 };
-                frameworkElement.RenderTransform = translateTransform;
-            }
-
-            var animation = new DoubleAnimation
-            {
-                From = 120,
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(600),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            var storyboard = new Storyboard();
-            var completion = new TaskCompletionSource<bool>();
-            storyboard.Children.Add(animation);
-            Storyboard.SetTarget(animation, translateTransform);
-            Storyboard.SetTargetProperty(animation, nameof(TranslateTransform.Y));
-            storyboard.Completed += (_, _) => completion.TrySetResult(true);
-            storyboard.Begin();
-
-            await completion.Task;
-        }
-
-        private static async Task FadeTextInAsync(UIElement element)
-        {
-            var visual = ElementCompositionPreview.GetElementVisual(element);
-            var compositor = visual.Compositor;
-            var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.16f, 1f), new Vector2(0.3f, 1f));
-
-            visual.Opacity = 0f;
-
-            var opacityAnimation = compositor.CreateScalarKeyFrameAnimation();
-            opacityAnimation.InsertKeyFrame(1f, 1f, easing);
-            opacityAnimation.Duration = TimeSpan.FromMilliseconds(400);
-            opacityAnimation.Target = "Opacity";
-
-            visual.StartAnimation("Opacity", opacityAnimation);
-            await Task.Delay(opacityAnimation.Duration);
+            return button;
         }
 
         private async void CardButton_Click(object sender, RoutedEventArgs e)
