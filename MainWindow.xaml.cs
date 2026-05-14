@@ -124,6 +124,28 @@ namespace CSD
                 AnimationHelper.AnimateEntrance(rootContent, fromY: 16f, durationMs: 380);
                 AnimationHelper.ApplyStandardInteractions(rootContent);
             }
+            _ = CheckForUpdatesAsync();
+        }
+
+        private async Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                var updateService = new UpdateService();
+                var updateInfo = await updateService.CheckForUpdateAsync();
+                
+                if (updateInfo?.HasUpdate == true)
+                {
+                    UpdateNotificationButton.Visibility = Visibility.Visible;
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateNotificationButton_Click(object sender, RoutedEventArgs e)
+        {
+            var aboutWindow = new AboutWindow();
+            aboutWindow.Activate();
         }
 
         private async Task<ContentDialogResult?> ShowContentDialogSafelyAsync(ContentDialog dialog)
@@ -899,6 +921,7 @@ namespace CSD
             {
                 _debugWindow = new DebugWindow();
                 _debugWindow.Closed += (_, _) => _debugWindow = null;
+                Logger.SetDebugWindow(_debugWindow);
             }
 
             _debugWindow.Activate();
