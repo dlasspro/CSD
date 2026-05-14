@@ -1,7 +1,16 @@
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Threading.Tasks;
 using Windows.Graphics;
+using Windows.UI;
 
 namespace CSD
 {
@@ -11,10 +20,29 @@ namespace CSD
     public sealed partial class InitializationWindow : Window
     {
         private const string TokenSettingsKey = "Token";
+        private const string IntroWord = "Classworks";
+
+        private readonly List<Border> _introBlocks = new();
+        private readonly List<TextBlock> _introTexts = new();
+        private readonly List<TranslateTransform> _introBlockTranslations = new();
+        private readonly List<ScaleTransform> _introBlockScales = new();
+        private readonly List<PlaneProjection> _introBlockProjections = new();
+        private readonly List<PlaneProjection> _introTextProjections = new();
+        private Grid? _animationStage;
+        private Grid? _contentRoot;
+        private Grid? _introOverlay;
+        private Image? _welcomeLogo;
+        private StackPanel? _welcomeActionsPanel;
+        private StackPanel? _contentTextHost;
+        private Button? _nextButton;
+
+        private bool _hasPlayedInitializationAnimation;
+        private bool _isTransitioningToForm;
 
         public InitializationWindow()
         {
             InitializeComponent();
+            BuildAnimationVisuals();
             ConfigureIntegratedTitleBar();
 
             try
@@ -56,9 +84,408 @@ namespace CSD
             if (sender is FrameworkElement rootContent)
             {
                 rootContent.Loaded -= RootContent_Loaded;
-                AnimationHelper.AnimateEntrance(rootContent, fromY: 18f, durationMs: 360);
-                AnimationHelper.ApplyStandardInteractions(rootContent);
+                _ = RunInitializationSequenceAsync();
             }
+        }
+
+        private void BuildAnimationVisuals()
+        {
+            FormPanel.Opacity = 0;
+            FormPanel.IsHitTestVisible = false;
+
+            _animationStage = new Grid
+            {
+                IsHitTestVisible = false
+            };
+
+            _contentRoot = new Grid
+            {
+                Opacity = 0,
+                RowDefinitions =
+                {
+                    new RowDefinition(),
+                    new RowDefinition { Height = GridLength.Auto },
+                    new RowDefinition()
+                }
+            };
+
+            _welcomeLogo = new Image
+            {
+                Width = 80,
+                Height = 80,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 0, 0, 8),
+                Opacity = 0,
+                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri("ms-appx:///icons/Classworks.ico"))
+            };
+            Grid.SetRow(_welcomeLogo, 0);
+            _contentRoot.Children.Add(_welcomeLogo);
+
+            _contentTextHost = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Opacity = 0
+            };
+            for (int i = 0; i < IntroWord.Length; i++)
+            {
+                var tb = new TextBlock
+                {
+                    Text = IntroWord[i].ToString(),
+                    FontSize = 32,
+                    FontWeight = FontWeights.Medium,
+                    TextAlignment = TextAlignment.Center
+                };
+                _contentTextHost.Children.Add(tb);
+            }
+            Grid.SetRow(_contentTextHost, 1);
+            _contentRoot.Children.Add(_contentTextHost);
+
+            _welcomeActionsPanel = new StackPanel
+            {
+                Spacing = 4,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Top,
+                Opacity = 0
+            };
+            _introOverlay = new Grid
+            {
+                Opacity = 0,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5)
+            };
+            _introOverlay.RenderTransform = new ScaleTransform { ScaleX = 1.25, ScaleY = 1.25 };
+
+            var introGrid = new Grid
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            BuildIntroVisualTree(introGrid);
+            _introOverlay.Children.Add(introGrid);
+
+            _nextButton = new Button
+            {
+                Content = new SymbolIcon(Symbol.Forward),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Width = 48,
+                Height = 48,
+                CornerRadius = new CornerRadius(24),
+                Margin = new Thickness(0, 8, 0, 0)
+            };
+            _nextButton.Click += NextButton_Click;
+            _welcomeActionsPanel.Children.Add(_nextButton);
+            Grid.SetRow(_welcomeActionsPanel, 2);
+            _contentRoot.Children.Add(_welcomeActionsPanel);
+
+            _animationStage.Children.Add(_contentRoot);
+            _animationStage.Children.Add(_introOverlay);
+            ContentHost.Children.Add(_animationStage);
+        }
+
+        private void BuildIntroVisualTree(Grid host)
+        {
+            _introBlocks.Clear();
+            _introTexts.Clear();
+            _introBlockTranslations.Clear();
+            _introBlockScales.Clear();
+            _introBlockProjections.Clear();
+            _introTextProjections.Clear();
+
+            var rects = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Spacing = 4
+            };
+            var texts = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Spacing = 4
+            };
+
+            for (int i = 0; i < IntroWord.Length; i++)
+            {
+                var translateTransform = new TranslateTransform { Y = 50 };
+                var scaleTransform = new ScaleTransform { ScaleX = 1, ScaleY = 1 };
+                var blockTransforms = new TransformGroup();
+                blockTransforms.Children.Add(translateTransform);
+                blockTransforms.Children.Add(scaleTransform);
+                var blockProjection = new PlaneProjection { RotationX = 0 };
+
+                var block = new Border
+                {
+                    Width = 32,
+                    Height = 32,
+                    CornerRadius = new CornerRadius(4),
+                    Background = new SolidColorBrush(i == 5
+                        ? Color.FromArgb(255, 0, 191, 255)
+                        : Color.FromArgb(255, 242, 242, 242)),
+                    Opacity = 0,
+                    RenderTransformOrigin = new Windows.Foundation.Point(0, 12),
+                    RenderTransform = blockTransforms,
+                    Projection = blockProjection
+                };
+                if (i == 5)
+                {
+                    Canvas.SetZIndex(block, 1);
+                }
+
+                var textProjection = new PlaneProjection { RotationX = -90 };
+                var text = new TextBlock
+                {
+                    Text = IntroWord[i].ToString(),
+                    MinWidth = 32,
+                    FontSize = 32,
+                    FontWeight = FontWeights.Medium,
+                    TextAlignment = TextAlignment.Center,
+                    Opacity = 0,
+                    RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5),
+                    Projection = textProjection
+                };
+
+                rects.Children.Add(block);
+                texts.Children.Add(text);
+
+                _introBlocks.Add(block);
+                _introTexts.Add(text);
+                _introBlockTranslations.Add(translateTransform);
+                _introBlockScales.Add(scaleTransform);
+                _introBlockProjections.Add(blockProjection);
+                _introTextProjections.Add(textProjection);
+            }
+
+            host.Children.Add(rects);
+            host.Children.Add(texts);
+        }
+
+        private void ResetIntroVisualState()
+        {
+            if (_introOverlay?.RenderTransform is ScaleTransform overlayScale)
+            {
+                overlayScale.ScaleX = 1.25;
+                overlayScale.ScaleY = 1.25;
+            }
+
+            if (_introOverlay != null)
+            {
+                _introOverlay.Opacity = 0;
+            }
+
+            if (_contentRoot != null)
+            {
+                _contentRoot.Opacity = 0;
+            }
+            if (_welcomeLogo != null)
+            {
+                _welcomeLogo.Opacity = 0;
+            }
+            if (_welcomeActionsPanel != null)
+            {
+                _welcomeActionsPanel.Opacity = 0;
+            }
+            if (_contentTextHost != null)
+            {
+                _contentTextHost.Opacity = 0;
+            }
+            if (_nextButton != null)
+            {
+                _nextButton.IsEnabled = false;
+            }
+
+            for (int i = 0; i < _introBlocks.Count; i++)
+            {
+                _introBlocks[i].Opacity = 0;
+                _introBlockTranslations[i].Y = 50;
+                _introBlockScales[i].ScaleX = 1;
+                _introBlockScales[i].ScaleY = 1;
+                _introBlockProjections[i].RotationX = 0;
+                _introTexts[i].Opacity = 0;
+                _introTexts[i].MinWidth = 32;
+                _introTextProjections[i].RotationX = -90;
+            }
+        }
+
+        private async Task RunInitializationSequenceAsync()
+        {
+            if (_hasPlayedInitializationAnimation)
+            {
+                return;
+            }
+
+            _hasPlayedInitializationAnimation = true;
+            ResetIntroVisualState();
+
+            await Task.Delay(80);
+            await PlayOobeIntroAnimationAsync();
+        }
+
+        private async Task PlayOobeIntroAnimationAsync()
+        {
+            if (_introOverlay == null)
+            {
+                return;
+            }
+
+            TitleStatusText.Text = "欢迎";
+
+            if (_introOverlay.RenderTransform is ScaleTransform overlayScale)
+            {
+                StartDoubleAnimation(overlayScale, nameof(ScaleTransform.ScaleX), 1.25, 1, 3000, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
+                StartDoubleAnimation(overlayScale, nameof(ScaleTransform.ScaleY), 1.25, 1, 3000, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
+            }
+
+            StartDoubleAnimation(_introOverlay, nameof(UIElement.Opacity), 0, 1, 3000, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
+
+            double elapsedDelayMs = 0;
+            double maxEndMs = 0;
+            int count = _introBlocks.Count;
+            const double durationMs = 500;
+
+            for (int i = 0; i < count; i++)
+            {
+                var stepDelay = Math.Sin(((i + 2d) / (count + 2d)) * (Math.PI / 2d)) * durationMs / count;
+                var phaseMs = stepDelay * 9;
+                StartIntroLetterAnimation(i, phaseMs);
+                maxEndMs = Math.Max(maxEndMs, elapsedDelayMs + (phaseMs * 2) + 750);
+                elapsedDelayMs += stepDelay;
+                await Task.Delay(TimeSpan.FromMilliseconds(stepDelay));
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(Math.Max(0, maxEndMs - elapsedDelayMs)));
+            await RevealWelcomeChromeAsync();
+        }
+
+        private void StartIntroLetterAnimation(int index, double phaseMs)
+        {
+            var easeOut = new ExponentialEase { EasingMode = EasingMode.EaseOut };
+            var easeIn = new ExponentialEase { EasingMode = EasingMode.EaseIn };
+
+            StartDoubleAnimation(_introBlockTranslations[index], nameof(TranslateTransform.Y), 50, 0, phaseMs, 0, easeOut);
+            StartDoubleAnimation(_introBlocks[index], nameof(UIElement.Opacity), 0, 1, phaseMs, 0, easeOut);
+
+            if (index == 5)
+            {
+                StartDoubleAnimation(_introBlockScales[index], nameof(ScaleTransform.ScaleX), 1, 2.17, 250, 307, new CubicEase { EasingMode = EasingMode.EaseOut });
+            }
+
+            if (index == 6)
+            {
+                StartDoubleAnimation(_introBlocks[index], nameof(UIElement.Opacity), 1, 0, 1, phaseMs + 1, easeOut);
+            }
+
+            StartDoubleAnimation(_introBlockProjections[index], nameof(PlaneProjection.RotationX), 0, 90, phaseMs * 0.5, phaseMs + 750, easeIn);
+            StartDoubleAnimation(_introBlocks[index], nameof(UIElement.Opacity), index == 6 ? 0 : 1, 0, phaseMs * 0.5, phaseMs + 750, easeIn);
+
+            StartDoubleAnimation(_introTextProjections[index], nameof(PlaneProjection.RotationX), -90, 0, phaseMs * 0.5, (phaseMs * 1.5) + 750, easeOut);
+            StartDoubleAnimation(_introTexts[index], nameof(UIElement.Opacity), 0, 1, phaseMs * 0.5, (phaseMs * 1.5) + 750, easeOut);
+        }
+
+        private async Task RevealWelcomeChromeAsync()
+        {
+            if (_contentRoot == null || _introOverlay == null || _nextButton == null || _welcomeLogo == null || _welcomeActionsPanel == null)
+            {
+                return;
+            }
+
+            TitleStatusText.Text = "欢迎";
+
+            _contentRoot.Opacity = 1;
+            StartDoubleAnimation(_welcomeLogo, nameof(UIElement.Opacity), 0, 1, 200, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
+            StartDoubleAnimation(_welcomeActionsPanel, nameof(UIElement.Opacity), 0, 1, 200, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
+            await Task.Delay(20);
+
+            foreach (var tb in _introTexts)
+            {
+                StartDoubleAnimation(tb, nameof(FrameworkElement.MinWidth), 32, 0, 700, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
+            }
+            if (_introOverlay.Children.Count > 0 && _introOverlay.Children[0] is Grid introGrid && introGrid.Children.Count > 1 && introGrid.Children[1] is StackPanel texts)
+            {
+                StartDoubleAnimation(texts, nameof(StackPanel.Spacing), 4, 0, 700, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
+            }
+
+            await Task.Delay(240);
+            _nextButton.IsEnabled = true;
+            _animationStage!.IsHitTestVisible = true;
+        }
+
+        private async Task ShowFormAsync()
+        {
+            if (_isTransitioningToForm)
+            {
+                return;
+            }
+            _isTransitioningToForm = true;
+
+            if (_animationStage != null)
+            {
+                await FadeVisualOpacityAsync(_animationStage, 1f, 0f, 220);
+                _animationStage.Visibility = Visibility.Collapsed;
+                _animationStage.IsHitTestVisible = false;
+            }
+
+            FormPanel.Opacity = 1;
+            FormPanel.IsHitTestVisible = true;
+            TitleStatusText.Text = "初始化";
+
+            AnimationHelper.AnimateEntrance(FormPanel, fromY: 150f, durationMs: 360);
+            AnimationHelper.ApplyStandardInteractions(FormPanel);
+
+            await Task.Delay(380);
+            TokenBox.Focus(FocusState.Programmatic);
+        }
+
+        private async Task FadeVisualOpacityAsync(UIElement element, float from, float to, double durationMs)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(element);
+            var compositor = visual.Compositor;
+            var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.19f, 1f), new Vector2(0.22f, 1f));
+
+            visual.Opacity = from;
+
+            var animation = compositor.CreateScalarKeyFrameAnimation();
+            animation.InsertKeyFrame(1f, to, easing);
+            animation.Duration = TimeSpan.FromMilliseconds(durationMs);
+
+            visual.StartAnimation("Opacity", animation);
+            await Task.Delay(animation.Duration);
+        }
+
+        private void StartDoubleAnimation(
+            DependencyObject target,
+            string property,
+            double from,
+            double to,
+            double durationMs,
+            double beginTimeMs,
+            EasingFunctionBase easing)
+        {
+            var animation = new DoubleAnimation
+            {
+                From = from,
+                To = to,
+                Duration = TimeSpan.FromMilliseconds(durationMs),
+                BeginTime = TimeSpan.FromMilliseconds(beginTimeMs),
+                EnableDependentAnimation = true,
+                EasingFunction = easing
+            };
+
+            var storyboard = new Storyboard();
+            storyboard.Children.Add(animation);
+            Storyboard.SetTarget(animation, target);
+            Storyboard.SetTargetProperty(animation, property);
+            storyboard.Begin();
+        }
+
+        private async void NextButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ShowFormAsync();
         }
 
         private void RestoreWindowState()

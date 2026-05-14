@@ -64,14 +64,7 @@
                 Grid.Row="0"
                 VerticalScrollBarVisibility="Auto"
                 HorizontalScrollBarVisibility="Disabled">
-                <StackPanel x:Name="HomeworkContainer" Spacing="14">
-                    <StackPanel.ChildrenTransitions>
-                        <TransitionCollection>
-                            <EntranceThemeTransition IsStaggeringEnabled="True" />
-                            <RepositionThemeTransition />
-                        </TransitionCollection>
-                    </StackPanel.ChildrenTransitions>
-                </StackPanel>
+                <StackPanel x:Name="HomeworkContainer" Spacing="14" />
             </ScrollViewer>
 
             <!-- Row 1: 底部导航栏（含空作业按钮） -->

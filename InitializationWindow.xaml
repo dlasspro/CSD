@@ -42,6 +42,7 @@
                     FontWeight="SemiBold"
                     Text="CSD" />
                 <TextBlock
+                    x:Name="TitleStatusText"
                     Margin="0,-1,0,0"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Style="{StaticResource BodyStrongTextBlockStyle}"
@@ -49,8 +50,12 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" Padding="32">
+        <Grid
+            x:Name="ContentHost"
+            Grid.Row="1"
+            Padding="32">
             <StackPanel
+                x:Name="FormPanel"
                 Width="360"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"

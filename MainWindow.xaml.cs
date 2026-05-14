@@ -1,8 +1,10 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,9 +44,16 @@ namespace CSD
         private DebugWindow? _debugWindow;
         private bool _isUpdatingCalendarSelection;
         private bool _isContentDialogOpen;
+        private int _cardAnimationSequence = 0;
 
         // 当前作业的科目名称集合（用于判断未完成作业）
         private HashSet<string> _currentHomeworkSubjects = new();
+
+        private sealed class CardAnimationContext
+        {
+            public FrameworkElement CardElement { get; init; } = null!;
+            public UIElement TextHost { get; init; } = null!;
+        }
 
         private string BaseUrl
         {
@@ -691,7 +700,7 @@ namespace CSD
             // 如果已有缓存数据，先用缓存重新渲染（确保字体大小等设置立即生效）
             if (!string.IsNullOrWhiteSpace(_rawJson))
             {
-                ShowHomework(_rawJson);
+                await ShowHomeworkAsync(_rawJson);
             }
             // 再从服务器拉取最新数据
             await LoadHomeworkAsync(_currentDate);
@@ -817,7 +826,7 @@ namespace CSD
             }
 
             _rawJson = responseBody;
-            ShowHomework(responseBody);
+            await ShowHomeworkAsync(responseBody);
 
             if (currentSequence != _loadingSequence)
                 return;
@@ -896,7 +905,7 @@ namespace CSD
             _debugWindow.AppendLog(method, path, statusCode, responseBody, errorMessage);
         }
 
-        private void ShowHomework(string json)
+        private async Task ShowHomeworkAsync(string json)
         {
             try
             {
@@ -946,7 +955,9 @@ namespace CSD
                 if (availableWidth <= 0) availableWidth = 800;
 
                 var rows = BuildCardRows(items, availableWidth, minCardWidth, gap, contentFontSize);
+                var cardAnimations = new List<CardAnimationContext>();
                 int animationIndex = 0;
+                int currentCardAnimationSequence = ++_cardAnimationSequence;
 
                 foreach (var rowItems in rows)
                 {
@@ -967,13 +978,15 @@ namespace CSD
                     for (int column = 0; column < rowItems.Count; column++)
                     {
                         var card = CreateCard(rowItems[column], subjectFontSize, contentFontSize, animationIndex++);
-                        Grid.SetColumn(card, column);
-                        rowGrid.Children.Add(card);
+                        cardAnimations.Add(card);
+                        Grid.SetColumn(card.CardElement, column);
+                        rowGrid.Children.Add(card.CardElement);
                     }
 
                     HomeworkContainer.Children.Add(rowGrid);
-                    AnimationHelper.AnimateEntrance(rowGrid, fromY: 10f, durationMs: 260);
                 }
+
+                await PlayCardEntranceSequenceAsync(cardAnimations, currentCardAnimationSequence);
             }
             catch (JsonException)
             {
@@ -1064,31 +1077,36 @@ namespace CSD
             return Math.Clamp(desiredWidth, minCardWidth, maxWidth);
         }
 
-        private Button CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize, int index)
+        private CardAnimationContext CreateCard(HomeworkItem item, double subjectFontSize, double contentFontSize, int index)
         {
             var border = new Border
             {
                 Padding = new Thickness(22),
                 Background = (Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"],
-                CornerRadius = new CornerRadius(10),
+                CornerRadius = new CornerRadius(25),
                 Translation = new Vector3(0, 0, 16),
                 VerticalAlignment = VerticalAlignment.Stretch
             };
 
             border.Shadow = new ThemeShadow();
-            AnimationHelper.AnimateEntrance(border, fromY: 18f, durationMs: 320, delayMs: Math.Min(index, 10) * 35);
 
             var stack = new StackPanel { Spacing = 10 };
-            stack.Children.Add(new TextBlock
+            var textHost = new StackPanel
+            {
+                Spacing = 10,
+                Opacity = 0
+            };
+            textHost.Children.Add(new TextBlock
             {
                 FontSize = subjectFontSize,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Text = item.Subject
             });
-            stack.Children.Add(MarkdownTextRenderer.CreateRichTextBlock(
+            textHost.Children.Add(MarkdownTextRenderer.CreateRichTextBlock(
                 item.Content,
                 contentFontSize,
                 (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
+            stack.Children.Add(textHost);
 
             border.Child = stack;
 
@@ -1106,7 +1124,101 @@ namespace CSD
             };
             button.Click += CardButton_Click;
 
-            return button;
+            PrepareCardVisual(button);
+            PrepareTextVisual(textHost);
+
+            return new CardAnimationContext
+            {
+                CardElement = button,
+                TextHost = textHost
+            };
+        }
+
+        private void PrepareCardVisual(UIElement element)
+        {
+            if (element is FrameworkElement frameworkElement)
+            {
+                frameworkElement.RenderTransform = new TranslateTransform { Y = 120 };
+                frameworkElement.Opacity = 1;
+            }
+        }
+
+        private void PrepareTextVisual(UIElement element)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(element);
+            visual.Opacity = 0f;
+        }
+
+        private async Task PlayCardEntranceSequenceAsync(IReadOnlyList<CardAnimationContext> cards, int animationSequence)
+        {
+            foreach (var card in cards)
+            {
+                if (animationSequence != _cardAnimationSequence)
+                {
+                    return;
+                }
+
+                await SlideCardIntoPlaceAsync(card.CardElement);
+            }
+
+            foreach (var card in cards)
+            {
+                if (animationSequence != _cardAnimationSequence)
+                {
+                    return;
+                }
+
+                await FadeTextInAsync(card.TextHost);
+            }
+        }
+
+        private static async Task SlideCardIntoPlaceAsync(UIElement element)
+        {
+            if (element is not FrameworkElement frameworkElement)
+            {
+                return;
+            }
+
+            if (frameworkElement.RenderTransform is not TranslateTransform translateTransform)
+            {
+                translateTransform = new TranslateTransform { Y = 120 };
+                frameworkElement.RenderTransform = translateTransform;
+            }
+
+            var animation = new DoubleAnimation
+            {
+                From = 120,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(600),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            var storyboard = new Storyboard();
+            var completion = new TaskCompletionSource<bool>();
+            storyboard.Children.Add(animation);
+            Storyboard.SetTarget(animation, translateTransform);
+            Storyboard.SetTargetProperty(animation, nameof(TranslateTransform.Y));
+            storyboard.Completed += (_, _) => completion.TrySetResult(true);
+            storyboard.Begin();
+
+            await completion.Task;
+        }
+
+        private static async Task FadeTextInAsync(UIElement element)
+        {
+            var visual = ElementCompositionPreview.GetElementVisual(element);
+            var compositor = visual.Compositor;
+            var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.16f, 1f), new Vector2(0.3f, 1f));
+
+            visual.Opacity = 0f;
+
+            var opacityAnimation = compositor.CreateScalarKeyFrameAnimation();
+            opacityAnimation.InsertKeyFrame(1f, 1f, easing);
+            opacityAnimation.Duration = TimeSpan.FromMilliseconds(400);
+            opacityAnimation.Target = "Opacity";
+
+            visual.StartAnimation("Opacity", opacityAnimation);
+            await Task.Delay(opacityAnimation.Duration);
         }
 
         private async void CardButton_Click(object sender, RoutedEventArgs e)
@@ -1453,4 +1565,3 @@ namespace CSD
         }
     }
 }
-
