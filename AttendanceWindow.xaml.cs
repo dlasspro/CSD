@@ -195,7 +195,7 @@ namespace CSD
             var headerIcon = new TextBlock
             {
                 Text = char.ConvertFromUtf32(0xF0849),
-                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("ms-appx:///Assets/MaterialDesignIconsDesktop.ttf#Material Design Icons Desktop"),
+                FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(AppSettings.GetAssetUri("Assets/MaterialDesignIconsDesktop.ttf").AbsoluteUri + "#Material Design Icons Desktop"),
                 FontSize = 32,
                 Foreground = new SolidColorBrush(Colors.White),
                 HorizontalAlignment = HorizontalAlignment.Center
@@ -302,7 +302,7 @@ namespace CSD
             return card;
         }
 
-        private static readonly FontFamily MdiFont = new("ms-appx:///Assets/MaterialDesignIconsDesktop.ttf#Material Design Icons Desktop");
+        private static readonly FontFamily MdiFont = new(AppSettings.GetAssetUri("Assets/MaterialDesignIconsDesktop.ttf").AbsoluteUri + "#Material Design Icons Desktop");
 
         private Button CreateStatusButton(string icon, AttendanceStatus status, Color color, StudentAttendance student)
         {

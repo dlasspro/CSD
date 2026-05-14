@@ -124,6 +124,61 @@ namespace CSD
                 AnimationHelper.AnimateEntrance(rootContent, fromY: 16f, durationMs: 380);
                 AnimationHelper.ApplyStandardInteractions(rootContent);
             }
+            _ = CheckForUpdatesAsync();
+        }
+
+        private async Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                var updateService = new UpdateService();
+                var updateInfo = await updateService.CheckForUpdateAsync();
+
+                if (updateInfo?.HasUpdate == true)
+                {
+                    // 有更新时启动关于按钮闪烁动画
+                    StartAboutButtonBlinkAnimation();
+                }
+            }
+            catch { }
+        }
+
+        private Storyboard? _aboutButtonBlinkStoryboard;
+
+        private void StartAboutButtonBlinkAnimation()
+        {
+            if (_aboutButtonBlinkStoryboard != null)
+                return;
+
+            _aboutButtonBlinkStoryboard = new Storyboard
+            {
+                RepeatBehavior = RepeatBehavior.Forever
+            };
+
+            var animation = new DoubleAnimation
+            {
+                From = 1.0,
+                To = 0.3,
+                Duration = TimeSpan.FromMilliseconds(500),
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever
+            };
+
+            Storyboard.SetTarget(animation, AboutButton);
+            Storyboard.SetTargetProperty(animation, "(UIElement.Opacity)");
+
+            _aboutButtonBlinkStoryboard.Children.Add(animation);
+            _aboutButtonBlinkStoryboard.Begin();
+        }
+
+        private void StopAboutButtonBlinkAnimation()
+        {
+            if (_aboutButtonBlinkStoryboard != null)
+            {
+                _aboutButtonBlinkStoryboard.Stop();
+                _aboutButtonBlinkStoryboard = null;
+            }
+            AboutButton.Opacity = 1.0;
         }
 
         private async Task<ContentDialogResult?> ShowContentDialogSafelyAsync(ContentDialog dialog)
@@ -735,6 +790,9 @@ namespace CSD
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
+            // 停止闪烁动画
+            StopAboutButtonBlinkAnimation();
+
             var aboutWindow = new AboutWindow();
             aboutWindow.Activate();
         }

@@ -458,7 +458,7 @@ namespace CSD
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 Margin = new Thickness(8, 4, 8, 12)
             });
-            _navigationItemsPanel.Children.Add(CreateNavigationButton("服务器", "server", imageIconUri: "ms-appx:///icons/ic_gallery_cloud_synchronization.ico"));
+            _navigationItemsPanel.Children.Add(CreateNavigationButton("服务器", "server", imageIconUri: AppSettings.GetAssetUri("icons/ic_gallery_cloud_synchronization.ico").AbsoluteUri));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("科目", "subjects", "\uE70F"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("名单", "roster", "\uE716"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("刷新", "refresh", "\uE72C"));
@@ -1129,7 +1129,7 @@ namespace CSD
 
             var localIcon = new Microsoft.UI.Xaml.Controls.ImageIcon
             {
-                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri("ms-appx:///icons/ic_public_folder.ico")),
+                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_public_folder.ico")),
                 Width = 18,
                 Height = 18,
                 VerticalAlignment = VerticalAlignment.Top,
@@ -1279,7 +1279,7 @@ namespace CSD
             var deviceHeader = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(0, 6, 0, 0) };
             deviceHeader.Children.Add(new Image
             {
-                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri("ms-appx:///icons/ic_device_matebook.ico")),
+                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_device_matebook.ico")),
                 Width = 20,
                 Height = 20,
                 VerticalAlignment = VerticalAlignment.Center
@@ -2667,7 +2667,7 @@ namespace CSD
 
             var autoIcon = new Microsoft.UI.Xaml.Controls.ImageIcon
             {
-                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri("ms-appx:///icons/ic_public_refresh.ico")),
+                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_public_refresh.ico")),
                 Width = 20,
                 Height = 20,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -2675,7 +2675,7 @@ namespace CSD
 
             var intervalIcon = new Microsoft.UI.Xaml.Controls.ImageIcon
             {
-                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri("ms-appx:///icons/ic_statusbar_alarm.ico")),
+                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_statusbar_alarm.ico")),
                 Width = 20,
                 Height = 20,
                 VerticalAlignment = VerticalAlignment.Center,

@@ -99,53 +99,21 @@ namespace CSD
 
                 if (currentExeExists)
                 {
-                    CopyDirectoryContents(sourceDir, appDir, excludeFiles: new[] { "CSD.exe" });
+                    // 将所有文件（包括exe）复制到临时目录，通过批处理脚本在程序退出后替换
+                    var batchScript = CreateRestartScript(appDir, sourceDir);
 
-                    var tempNewExe = Path.Combine(tempDir, "new_CSD.exe");
-                    var newExeSource = Path.Combine(sourceDir, "CSD.exe");
-                    if (File.Exists(newExeSource))
+                    OnStatusChanged("更新完成，正在重启程序...");
+
+                    ProcessStartInfo startInfo = new ProcessStartInfo
                     {
-                        File.Copy(newExeSource, tempNewExe, overwrite: true);
+                        FileName = "cmd.exe",
+                        Arguments = $"/c \"{batchScript}\"",
+                        WorkingDirectory = appDir,
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    };
 
-                        var batchScript = CreateRestartScript(appDir, tempNewExe, exePath);
-
-                        OnStatusChanged("更新完成，正在重启程序...");
-
-                        ProcessStartInfo startInfo;
-                        if (OperatingSystem.IsWindows())
-                        {
-                            startInfo = new ProcessStartInfo
-                            {
-                                FileName = "cmd.exe",
-                                Arguments = $"/c \"{batchScript}\"",
-                                WorkingDirectory = appDir,
-                                CreateNoWindow = true,
-                                UseShellExecute = false
-                            };
-                        }
-                        else
-                        {
-                            startInfo = new ProcessStartInfo
-                            {
-                                FileName = Path.Combine(appDir, "CSD.exe"),
-                                WorkingDirectory = appDir
-                            };
-                        }
-
-                        Process.Start(startInfo);
-                    }
-                    else
-                    {
-                        CopyDirectoryContents(sourceDir, appDir, excludeFiles: null);
-
-                        OnStatusChanged("更新完成，正在重启程序...");
-
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = exePath,
-                            WorkingDirectory = appDir
-                        });
-                    }
+                    Process.Start(startInfo);
                 }
                 else
                 {
@@ -170,28 +138,60 @@ namespace CSD
             }
             finally
             {
-                if (tempDir != null)
-                {
-                    try { Directory.Delete(tempDir, true); } catch { }
-                }
+                // 不在此处删除临时目录，批处理脚本会在复制完成后自行清理
             }
         }
 
-        private string CreateRestartScript(string appDir, string newExePath, string oldExePath)
+        private string CreateRestartScript(string appDir, string sourceDir)
         {
             var scriptPath = Path.Combine(appDir, "_update.bat");
+            var logPath = Path.Combine(appDir, "_update.log");
+
+            // 收集所有需要复制的文件
+            var copyCommands = new StringBuilder();
+            foreach (var file in Directory.GetFiles(sourceDir))
+            {
+                var fileName = Path.GetFileName(file);
+                var destFile = Path.Combine(appDir, fileName);
+                var label = $"copy_{fileName.Replace(".", "_").Replace("-", "_")}";
+                // 使用重试机制：最多等待30秒
+                copyCommands.AppendLine($@"
+echo Copying {fileName}... >> ""{logPath}""
+set ""target={destFile}""
+set ""src={file}""
+set retries=0
+:{label}
+copy /y ""%src%"" ""%target%"" >> ""{logPath}"" 2>&1
+if %errorlevel% neq 0 (
+    set /a retries+=1
+    if %retries% lss 30 (
+        timeout /t 1 /nobreak >nul
+        goto {label}
+    )
+    echo Failed to copy {fileName} after 30 retries >> ""{logPath}""
+)");
+            }
+
+            foreach (var subDir in Directory.GetDirectories(sourceDir))
+            {
+                var dirName = Path.GetFileName(subDir);
+                var destSubDir = Path.Combine(appDir, dirName);
+                copyCommands.AppendLine($"echo Copying directory {dirName}... >> \"{logPath}\"");
+                copyCommands.AppendLine($"xcopy /e /y /i \"{subDir}\" \"{destSubDir}\" >> \"{logPath}\" 2>&1");
+            }
+
             var batchContent = $@"
 @echo off
-timeout /t 2 /nobreak >nul
-del /f /q ""{oldExePath}""
-if exist ""{oldExePath}"" (
-    timeout /t 5 /nobreak >nul
-    del /f /q ""{oldExePath}""
-)
-copy /y ""{newExePath}"" ""{oldExePath}""
-del /f /q ""{newExePath}""
-del /f /q ""%~f0""
+echo Update script started at %date% %time% >> ""{logPath}""
+timeout /t 3 /nobreak >nul
+{copyCommands}
+echo Starting CSD.exe... >> ""{logPath}""
 start """" ""{Path.Combine(appDir, "CSD.exe")}""
+echo Update completed at %date% %time% >> ""{logPath}""
+echo Cleaning up... >> ""{logPath}""
+del /f /q ""{logPath}"" 2>nul
+rd /s /q ""{sourceDir}"" 2>nul
+del /f /q ""%~f0""
 ";
             File.WriteAllText(scriptPath, batchContent, new UTF8Encoding(false));
             return scriptPath;

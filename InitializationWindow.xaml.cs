@@ -122,7 +122,7 @@ namespace CSD
                 VerticalAlignment = VerticalAlignment.Bottom,
                 Margin = new Thickness(0, 0, 0, 8),
                 Opacity = 0,
-                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri("ms-appx:///icons/Classworks.ico"))
+                Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/Classworks.ico"))
             };
             Grid.SetRow(_welcomeLogo, 0);
             _contentRoot.Children.Add(_welcomeLogo);

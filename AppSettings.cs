@@ -11,6 +11,21 @@ namespace CSD
         private static readonly SettingsDictionary Settings = new();
 
         public static IDictionary<string, object> Values => Settings;
+
+        /// <summary>
+        /// 获取应用资源文件的 URI（兼容打包和非打包部署）。
+        /// 优先使用 file:// 协议从 exe 目录加载，回退到 ms-appx:// 协议。
+        /// </summary>
+        public static Uri GetAssetUri(string relativePath)
+        {
+            var exeDir = AppContext.BaseDirectory;
+            var fullPath = Path.Combine(exeDir, relativePath);
+            if (File.Exists(fullPath))
+            {
+                return new Uri("file:///" + fullPath.Replace('\\', '/'));
+            }
+            return new Uri("ms-appx:///" + relativePath);
+        }
     }
 
     /// <summary>与 Classworks KV 服务端约定的特殊键名（用于 GET/POST /kv/&lt;键名&gt;）。</summary>
