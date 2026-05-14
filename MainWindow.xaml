@@ -32,7 +32,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel
-                Grid.Column="0"
+                Grid.Column="1"
                 Margin="24,0,16,0"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Left"
@@ -55,38 +55,20 @@
         <!-- 主内容 -->
         <Grid Grid.Row="1" Padding="24,12,24,24">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Row 0: 更新通知按钮 -->
-            <Button
-                x:Name="UpdateNotificationButton"
-                Grid.Row="0"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Center"
-                Margin="0,0,0,12"
-                Padding="16,12"
-                Visibility="Collapsed"
-                Background="#DC3545"
-                Click="UpdateNotificationButton_Click">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Glyph="&#xE895;" FontSize="16" VerticalAlignment="Center" Foreground="White" />
-                    <TextBlock Text="发现新版本，点击前往关于页面更新" VerticalAlignment="Center" Foreground="White" FontWeight="SemiBold" />
-                </StackPanel>
-            </Button>
-
-            <!-- Row 1: 作业卡片 -->
+            <!-- Row 0: 作业卡片 -->
             <ScrollViewer
-                Grid.Row="1"
+                Grid.Row="0"
                 VerticalScrollBarVisibility="Auto"
                 HorizontalScrollBarVisibility="Disabled">
                 <StackPanel x:Name="HomeworkContainer" Spacing="14" />
             </ScrollViewer>
 
-            <!-- Row 2: 底部导航栏（含空作业按钮） -->
-            <Grid Grid.Row="2" Margin="0,12,0,0">
+            <!-- Row 1: 底部导航栏（含空作业按钮） -->
+            <Grid Grid.Row="1" Margin="0,12,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
