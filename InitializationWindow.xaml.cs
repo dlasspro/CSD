@@ -34,6 +34,11 @@ namespace CSD
         private Image? _welcomeLogo;
         private StackPanel? _welcomeActionsPanel;
         private StackPanel? _contentTextHost;
+        private StackPanel? _introTextPanel;
+        private TranslateTransform? _introTextPanelTranslation;
+        private TextBlock? _introDesktopText;
+        private TranslateTransform? _introDesktopTextTranslation;
+        private ScaleTransform? _introDesktopTextScale;
         private Button? _nextButton;
 
         private bool _hasPlayedInitializationAnimation;
@@ -136,7 +141,7 @@ namespace CSD
                 {
                     Text = IntroWord[i].ToString(),
                     FontSize = 32,
-                    FontWeight = FontWeights.Medium,
+                    FontWeight = FontWeights.SemiBold,
                     TextAlignment = TextAlignment.Center
                 };
                 _contentTextHost.Children.Add(tb);
@@ -203,12 +208,14 @@ namespace CSD
                 VerticalAlignment = VerticalAlignment.Center,
                 Spacing = 4
             };
-            var texts = new StackPanel
+            _introTextPanelTranslation = new TranslateTransform();
+            _introTextPanel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-                Spacing = 4
+                Spacing = 4,
+                RenderTransform = _introTextPanelTranslation
             };
 
             for (int i = 0; i < IntroWord.Length; i++)
@@ -244,7 +251,7 @@ namespace CSD
                     Text = IntroWord[i].ToString(),
                     MinWidth = 32,
                     FontSize = 32,
-                    FontWeight = FontWeights.Medium,
+                    FontWeight = FontWeights.SemiBold,
                     TextAlignment = TextAlignment.Center,
                     Opacity = 0,
                     RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5),
@@ -252,7 +259,7 @@ namespace CSD
                 };
 
                 rects.Children.Add(block);
-                texts.Children.Add(text);
+                _introTextPanel.Children.Add(text);
 
                 _introBlocks.Add(block);
                 _introTexts.Add(text);
@@ -262,8 +269,36 @@ namespace CSD
                 _introTextProjections.Add(textProjection);
             }
 
+            _introDesktopTextTranslation = new TranslateTransform();
+            _introDesktopTextScale = new ScaleTransform { ScaleX = 0.965, ScaleY = 0.965 };
+            var introDesktopTextTransforms = new TransformGroup();
+            introDesktopTextTransforms.Children.Add(_introDesktopTextScale);
+            introDesktopTextTransforms.Children.Add(_introDesktopTextTranslation);
+            _introDesktopText = new TextBlock
+            {
+                Text = "Desktop",
+                FontSize = 32,
+                FontWeight = FontWeights.SemiBold,
+                Opacity = 0,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5),
+                RenderTransform = introDesktopTextTransforms,
+                Foreground = new LinearGradientBrush
+                {
+                    StartPoint = new Windows.Foundation.Point(0, 0),
+                    EndPoint = new Windows.Foundation.Point(1, 1),
+                    GradientStops =
+                    {
+                        new GradientStop { Color = Color.FromArgb(255, 0x00, 0xCC, 0xFF), Offset = 0 },
+                        new GradientStop { Color = Color.FromArgb(255, 0x00, 0x7F, 0xFF), Offset = 1 }
+                    }
+                }
+            };
+
             host.Children.Add(rects);
-            host.Children.Add(texts);
+            host.Children.Add(_introTextPanel);
+            host.Children.Add(_introDesktopText);
         }
 
         private void ResetIntroVisualState()
@@ -294,6 +329,23 @@ namespace CSD
             if (_contentTextHost != null)
             {
                 _contentTextHost.Opacity = 0;
+            }
+            if (_introTextPanelTranslation != null)
+            {
+                _introTextPanelTranslation.X = 0;
+            }
+            if (_introDesktopText != null)
+            {
+                _introDesktopText.Opacity = 0;
+            }
+            if (_introDesktopTextTranslation != null)
+            {
+                _introDesktopTextTranslation.X = 0;
+            }
+            if (_introDesktopTextScale != null)
+            {
+                _introDesktopTextScale.ScaleX = 0.965;
+                _introDesktopTextScale.ScaleY = 0.965;
             }
             if (_nextButton != null)
             {
@@ -406,12 +458,40 @@ namespace CSD
             {
                 StartDoubleAnimation(tb, nameof(FrameworkElement.MinWidth), 32, 0, 700, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
             }
-            if (_introOverlay.Children.Count > 0 && _introOverlay.Children[0] is Grid introGrid && introGrid.Children.Count > 1 && introGrid.Children[1] is StackPanel texts)
+            if (_introTextPanel != null)
             {
-                StartDoubleAnimation(texts, nameof(StackPanel.Spacing), 4, 0, 700, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
+                StartDoubleAnimation(_introTextPanel, nameof(StackPanel.Spacing), 4, 0, 700, 0, new CubicEase { EasingMode = EasingMode.EaseOut });
             }
 
-            await Task.Delay(240);
+            await Task.Delay(720);
+
+            if (_introDesktopText != null && _introDesktopTextTranslation != null && _introTextPanel != null)
+            {
+                _introOverlay.UpdateLayout();
+                _introTextPanel.UpdateLayout();
+                _introDesktopText.UpdateLayout();
+
+                const double gap = 10;
+                double desktopWidth = _introDesktopText.ActualWidth;
+                double classworksTargetX = -((gap + desktopWidth) / 2d);
+                double desktopTargetX = (_introTextPanel.ActualWidth / 2d) + (gap / 2d);
+
+                if (_introTextPanelTranslation != null)
+                {
+                    StartDoubleAnimation(_introTextPanelTranslation, nameof(TranslateTransform.X), 0, classworksTargetX, 300, 0, new ExponentialEase { Exponent = 5, EasingMode = EasingMode.EaseOut });
+                }
+
+                _introDesktopTextTranslation.X = desktopTargetX + 14;
+                StartDoubleAnimation(_introDesktopTextTranslation, nameof(TranslateTransform.X), desktopTargetX + 14, desktopTargetX, 220, 20, new ExponentialEase { Exponent = 6, EasingMode = EasingMode.EaseOut });
+                StartDoubleAnimation(_introDesktopText, nameof(UIElement.Opacity), 0, 1, 180, 35, new ExponentialEase { Exponent = 6, EasingMode = EasingMode.EaseOut });
+                if (_introDesktopTextScale != null)
+                {
+                    StartDoubleAnimation(_introDesktopTextScale, nameof(ScaleTransform.ScaleX), 0.965, 1, 220, 20, new QuadraticEase { EasingMode = EasingMode.EaseOut });
+                    StartDoubleAnimation(_introDesktopTextScale, nameof(ScaleTransform.ScaleY), 0.965, 1, 220, 20, new QuadraticEase { EasingMode = EasingMode.EaseOut });
+                }
+            }
+
+            await Task.Delay(320);
             _nextButton.IsEnabled = true;
             _animationStage!.IsHitTestVisible = true;
         }
