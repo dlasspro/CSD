@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -72,8 +73,11 @@ namespace CSD
             // 设置窗口标题栏图标
             try
             {
-                var iconUri = AppSettings.GetAssetUri("Assets/StoreLogo.png");
-                AppWindow.SetIcon(iconUri.LocalPath);
+                var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
+                if (File.Exists(iconPath))
+                {
+                    AppWindow.SetIcon(iconPath);
+                }
             }
             catch { }
 
@@ -158,7 +162,7 @@ namespace CSD
                 shortcut.Description = "CSD - Classworks Desktop";
 
                 // 设置图标
-                var iconPath = AppSettings.GetAssetUri("Assets/StoreLogo.png").LocalPath;
+                var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
                 if (File.Exists(iconPath))
                 {
                     shortcut.IconLocation = $"{iconPath},0";

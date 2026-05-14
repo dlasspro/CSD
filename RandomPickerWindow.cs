@@ -346,8 +346,11 @@ namespace CSD
 
             try
             {
-                var iconUri = AppSettings.GetAssetUri("Assets/StoreLogo.png");
-                AppWindow.SetIcon(iconUri.LocalPath);
+                var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
+                if (System.IO.File.Exists(iconPath))
+                {
+                    AppWindow.SetIcon(iconPath);
+                }
             }
             catch { }
         }

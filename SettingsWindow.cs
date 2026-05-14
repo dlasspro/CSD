@@ -468,6 +468,7 @@ namespace CSD
             _navigationItemsPanel.Children.Add(CreateNavigationButton("随机点名", "randomPicker", "\uE716"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("自启动", "autostart", "\uE7E8"));
             _navigationItemsPanel.Children.Add(CreateNavigationButton("账户与数据", "account", "\uE716"));
+            _navigationItemsPanel.Children.Add(CreateNavigationButton("更新", "update", "\uE895"));
             navigationStack.Children.Add(_navigationItemsHost);
 
             _navigationScrollViewer = new ScrollViewer
@@ -560,6 +561,8 @@ namespace CSD
                 CreateSettingRow("当前 Token 状态", "查看授权状态并可重置。", tokenSection),
                 CreateSettingRow("数据管理", "导入、导出本地设置，或前往网页端。", ioStack));
 
+            var updateView = CreateCategoryView(BuildUpdateSettingsContent());
+
             _categoryViews["server"] = serverView;
             _categoryViews["subjects"] = subjectsView;
             _categoryViews["roster"] = rosterView;
@@ -570,6 +573,7 @@ namespace CSD
             _categoryViews["randomPicker"] = randomPickerView;
             _categoryViews["autostart"] = autoStartView;
             _categoryViews["account"] = accountView;
+            _categoryViews["update"] = updateView;
 
             _detailsHost.Children.Add(serverView);
             _detailsHost.Children.Add(subjectsView);
@@ -581,6 +585,7 @@ namespace CSD
             _detailsHost.Children.Add(randomPickerView);
             _detailsHost.Children.Add(autoStartView);
             _detailsHost.Children.Add(accountView);
+            _detailsHost.Children.Add(updateView);
 
             var contentRoot = new Grid
             {
@@ -632,8 +637,11 @@ namespace CSD
 
             try
             {
-                var iconUri = AppSettings.GetAssetUri("Assets/StoreLogo.png");
-                AppWindow.SetIcon(iconUri.LocalPath);
+                var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
+                if (System.IO.File.Exists(iconPath))
+                {
+                    AppWindow.SetIcon(iconPath);
+                }
             }
             catch { }
         }
@@ -718,6 +726,13 @@ namespace CSD
                     _pageDescriptionText.Visibility = Visibility.Visible;
                     _pageTitleText.Text = "账户与数据";
                     _pageDescriptionText.Text = "查看 Token 状态，并进行本地设置导入导出。";
+                    break;
+
+                case "update":
+                    _pageTitleText.Visibility = Visibility.Visible;
+                    _pageDescriptionText.Visibility = Visibility.Visible;
+                    _pageTitleText.Text = "更新";
+                    _pageDescriptionText.Text = "选择更新渠道以获取不同版本的更新。";
                     break;
             }
         }
@@ -2789,6 +2804,103 @@ namespace CSD
             });
 
             return root;
+        }
+
+        private StackPanel BuildUpdateSettingsContent()
+        {
+            var root = new StackPanel { Spacing = 16 };
+
+            // 当前渠道显示
+            var currentChannel = UpdateService.GetUpdateChannel();
+            var channelText = currentChannel == "beta" ? "测试版 (Beta)" : "正式版 (Stable)";
+
+            var channelInfoBlock = new TextBlock
+            {
+                Text = $"当前更新渠道: {channelText}",
+                FontSize = 14,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+            root.Children.Add(channelInfoBlock);
+
+            // 渠道选择卡片
+            var cardInner = new StackPanel { Spacing = 0 };
+
+            // 正式版选项
+            var stableRow = CreateUpdateChannelRow("正式版 (Stable)", "获取稳定可靠的正式版本更新。", "stable", currentChannel == "stable");
+            cardInner.Children.Add(stableRow);
+
+            // 分隔线
+            cardInner.Children.Add(new Border
+            {
+                Height = 1,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Background = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
+                Margin = new Thickness(16, 0, 16, 0)
+            });
+
+            // 测试版选项
+            var betaRow = CreateUpdateChannelRow("测试版 (Beta)", "获取最新功能的测试版本，可能存在不稳定因素。", "beta", currentChannel == "beta");
+            cardInner.Children.Add(betaRow);
+
+            root.Children.Add(new Border
+            {
+                Background = (Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"],
+                CornerRadius = new CornerRadius(12),
+                Padding = new Thickness(0, 2, 0, 2),
+                MaxWidth = 920,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Child = cardInner
+            });
+
+            return root;
+        }
+
+        private Grid CreateUpdateChannelRow(string title, string description, string channelValue, bool isSelected)
+        {
+            var radioButton = new RadioButton
+            {
+                IsChecked = isSelected,
+                GroupName = "UpdateChannel",
+                Tag = channelValue,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            radioButton.Checked += (s, e) =>
+            {
+                if (s is RadioButton rb && rb.Tag is string newChannel)
+                {
+                    UpdateService.SetUpdateChannel(newChannel);
+                }
+            };
+
+            var labelStack = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+            labelStack.Children.Add(new TextBlock
+            {
+                Text = title,
+                FontSize = 15,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+            });
+            labelStack.Children.Add(new TextBlock
+            {
+                Text = description,
+                FontSize = 12,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            });
+
+            var rowGrid = new Grid
+            {
+                Padding = new Thickness(16, 12, 16, 12),
+                ColumnSpacing = 16
+            };
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            Grid.SetColumn(radioButton, 0);
+            Grid.SetColumn(labelStack, 1);
+            rowGrid.Children.Add(radioButton);
+            rowGrid.Children.Add(labelStack);
+
+            return rowGrid;
         }
 
         private static FrameworkElement EditSettingsGlyph(string glyph)

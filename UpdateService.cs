@@ -72,12 +72,31 @@ namespace CSD
 
         public static string GetDeviceId() => DeviceId;
 
+        public static string GetUpdateChannel()
+        {
+            try
+            {
+                var channel = AppSettings.Values["UpdateChannel"] as string;
+                return string.IsNullOrWhiteSpace(channel) ? "stable" : channel;
+            }
+            catch
+            {
+                return "stable";
+            }
+        }
+
+        public static void SetUpdateChannel(string channel)
+        {
+            AppSettings.Values["UpdateChannel"] = channel;
+        }
+
         public async Task<UpdateInfo?> CheckForUpdateAsync(CancellationToken cancellationToken = default)
         {
             try
             {
                 var (os, arch) = GetSystemInfo();
-                var url = $"{UpdateCheckUrl}?os={os}&arch={arch}&channel=stable&user_id={Uri.EscapeDataString(DeviceId)}";
+                var channel = GetUpdateChannel();
+                var url = $"{UpdateCheckUrl}?os={os}&arch={arch}&channel={channel}&user_id={Uri.EscapeDataString(DeviceId)}";
 
                 using var response = await _httpClient.GetAsync(url, cancellationToken);
                 if (!response.IsSuccessStatusCode)

@@ -28,7 +28,15 @@ namespace CSD
             _carouselItems = items ?? new List<HomeworkItem>();
 
             // 窗口初始化
-            try { AppWindow.SetIcon(AppSettings.GetAssetUri("Assets/StoreLogo.png").LocalPath); } catch { }
+            try
+            {
+                var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
+                if (System.IO.File.Exists(iconPath))
+                {
+                    AppWindow.SetIcon(iconPath);
+                }
+            }
+            catch { }
 
             // 自定义标题栏
             ConfigureIntegratedTitleBar();
