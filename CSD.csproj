@@ -22,25 +22,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\SplashScreen.scale-200.png" />
-    <Content Include="Assets\LockScreenLogo.scale-200.png" />
-    <Content Include="Assets\Square150x150Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Content Include="Assets\StoreLogo.png" />
-    <Content Include="Assets\Wide310x150Logo.scale-200.png" />
-    <Content Include="Assets\Classworks.ico" />
-    <Content Include="Assets\app.ico" />
-    <Content Include="Assets\zhaishis.png" />
-    <Content Include="Assets\saskia.jpeg" />
-    <Content Include="Assets\wuyuan.jpeg" />
-    <Content Include="icons\ic_device_matebook.ico" />
-    <Content Include="icons\Classworks.ico" />
-    <Content Include="icons\ic_gallery_cloud_synchronization.ico" />
-    <Content Include="icons\ic_public_folder.ico" />
-    <Content Include="icons\ic_public_refresh.ico" />
-    <Content Include="icons\ic_statusbar_alarm.ico" />
-    <Content Include="Assets\MaterialDesignIconsDesktop.ttf" />
+    <Content Include="Assets\SplashScreen.scale-200.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\LockScreenLogo.scale-200.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Square150x150Logo.scale-200.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Square44x44Logo.scale-200.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\StoreLogo.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Wide310x150Logo.scale-200.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Classworks.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\zhaishis.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\saskia.jpeg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\wuyuan.jpeg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="icons\ic_device_matebook.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="icons\Classworks.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="icons\ic_gallery_cloud_synchronization.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="icons\ic_public_folder.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="icons\ic_public_refresh.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="icons\ic_statusbar_alarm.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\MaterialDesignIconsDesktop.ttf" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

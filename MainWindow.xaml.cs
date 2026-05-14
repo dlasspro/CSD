@@ -72,9 +72,13 @@ namespace CSD
             // 设置窗口标题栏图标
             try
             {
-                AppWindow.SetIcon("Assets/StoreLogo.png");
+                var iconUri = AppSettings.GetAssetUri("Assets/StoreLogo.png");
+                AppWindow.SetIcon(iconUri.LocalPath);
             }
             catch { }
+
+            // 检查并创建桌面快捷方式
+            EnsureDesktopShortcut();
 
             RestoreWindowState();
 
@@ -125,6 +129,44 @@ namespace CSD
                 AnimationHelper.ApplyStandardInteractions(rootContent);
             }
             _ = CheckForUpdatesAsync();
+        }
+
+        private void EnsureDesktopShortcut()
+        {
+            try
+            {
+                var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                var shortcutPath = Path.Combine(desktopPath, "CSD.lnk");
+
+                if (File.Exists(shortcutPath))
+                    return;
+
+                var exePath = Path.Combine(AppContext.BaseDirectory, "CSD.exe");
+                if (!File.Exists(exePath))
+                    return;
+
+                // 使用 WSH (Windows Script Host) 创建快捷方式
+                var shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType == null) return;
+
+                dynamic? shell = Activator.CreateInstance(shellType);
+                if (shell == null) return;
+
+                dynamic shortcut = shell.CreateShortcut(shortcutPath);
+                shortcut.TargetPath = exePath;
+                shortcut.WorkingDirectory = AppContext.BaseDirectory;
+                shortcut.Description = "CSD - Classworks Desktop";
+
+                // 设置图标
+                var iconPath = AppSettings.GetAssetUri("Assets/StoreLogo.png").LocalPath;
+                if (File.Exists(iconPath))
+                {
+                    shortcut.IconLocation = $"{iconPath},0";
+                }
+
+                shortcut.Save();
+            }
+            catch { }
         }
 
         private async Task CheckForUpdatesAsync()

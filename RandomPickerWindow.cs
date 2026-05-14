@@ -346,7 +346,8 @@ namespace CSD
 
             try
             {
-                AppWindow.SetIcon("Assets/StoreLogo.png");
+                var iconUri = AppSettings.GetAssetUri("Assets/StoreLogo.png");
+                AppWindow.SetIcon(iconUri.LocalPath);
             }
             catch { }
         }
