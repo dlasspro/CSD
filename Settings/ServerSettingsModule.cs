@@ -1,4 +1,4 @@
-using Microsoft.UI;
+﻿using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -7,6 +7,14 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
+
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+using CSD.Settings;
+
 
 namespace CSD.Settings
 {

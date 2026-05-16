@@ -1,4 +1,4 @@
-using Microsoft.UI;
+﻿using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -13,7 +13,17 @@ using System.Threading.Tasks;
 using Windows.Graphics;
 using Windows.UI;
 
-namespace CSD
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+using CSD.Settings;
+
+
+
+
+namespace CSD.Views
 {
     public enum AttendanceStatus
     {

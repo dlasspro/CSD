@@ -1,11 +1,21 @@
-using System;
+﻿using System;
 using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CSD
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+using CSD.Settings;
+
+
+
+
+namespace CSD.Services
 {
     public sealed class UpdateService
     {

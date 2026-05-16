@@ -1,4 +1,4 @@
-using Microsoft.UI.Text;
+﻿using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
@@ -7,7 +7,15 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSD
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+using CSD.Settings;
+
+
+namespace CSD.Helpers
 {
     /// <summary>
     /// Markdown/MFM 文本渲染器

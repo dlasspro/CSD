@@ -1,4 +1,4 @@
-using Microsoft.UI;
+﻿using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -15,7 +15,17 @@ using Windows.Foundation;
 using Windows.Graphics;
 using Windows.UI;
 
-namespace CSD
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+using CSD.Settings;
+
+
+
+
+namespace CSD.Views
 {
     public sealed partial class RandomPickerWindow : Window
     {

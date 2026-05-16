@@ -1,4 +1,4 @@
-using Microsoft.UI.Windowing;
+﻿using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
@@ -18,7 +18,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.Graphics;
 
-namespace CSD
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+using CSD.Settings;
+
+
+
+
+namespace CSD.Views
 {
     public sealed class HomeworkItem
     {

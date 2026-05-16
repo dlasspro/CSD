@@ -1,4 +1,4 @@
-using CSD.Settings;
+﻿using CSD.Settings;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -8,7 +8,16 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 
-namespace CSD
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+
+
+
+
+namespace CSD.Views
 {
     /// <summary>
     /// 设置窗口，用于管理和展示应用配置项。

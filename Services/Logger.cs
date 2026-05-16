@@ -1,6 +1,16 @@
-using System;
+﻿using System;
 
-namespace CSD
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+using CSD.Settings;
+
+
+
+
+namespace CSD.Services
 {
     /// <summary>
     /// 全局日志记录辅助类，用于在 DebugWindow 中记录信息

@@ -1,6 +1,14 @@
-using System;
+﻿using System;
 
-namespace CSD
+
+using CSD.Views;
+using CSD.Models;
+using CSD.Services;
+using CSD.Helpers;
+using CSD.Settings;
+
+
+namespace CSD.Models
 {
     public sealed class UpdateInfo
     {
