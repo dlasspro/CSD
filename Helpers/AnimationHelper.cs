@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Composition;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
@@ -22,17 +22,31 @@ namespace CSD.Helpers
     {
         public static void AnimateEntrance(UIElement element, float fromY = 20f, float fromOpacity = 0f, double durationMs = 360, double delayMs = 0)
         {
+            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
+            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            
             if (element.XamlRoot is null && element is FrameworkElement frameworkElement)
             {
                 RoutedEventHandler? loadedHandler = null;
                 loadedHandler = (_, _) =>
                 {
                     frameworkElement.Loaded -= loadedHandler;
-                    RunEntranceAnimation(element, fromY, fromOpacity, durationMs, delayMs);
+                    AnimateEntrance(element, fromY, fromOpacity, durationMs, delayMs);
                 };
                 frameworkElement.Loaded += loadedHandler;
                 return;
             }
+
+            if (!enabled)
+            {
+                var visual = ElementCompositionPreview.GetElementVisual(element);
+                visual.Opacity = 1f;
+                visual.Offset = Vector3.Zero;
+                return;
+            }
+
+            if (!highFramerate) durationMs = 0;
+            if (durationMs < 1) durationMs = 1; // Minimum duration for Composition animations
 
             RunEntranceAnimation(element, fromY, fromOpacity, durationMs, delayMs);
         }
@@ -55,6 +69,19 @@ namespace CSD.Helpers
 
         public static void AnimateOpacity(UIElement element, float fromOpacity, float toOpacity, double durationMs = 220)
         {
+            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
+            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+
+            if (!enabled)
+            {
+                var visualOpacity = ElementCompositionPreview.GetElementVisual(element);
+                visualOpacity.Opacity = toOpacity;
+                return;
+            }
+
+            if (!highFramerate) durationMs = 0;
+            if (durationMs < 1) durationMs = 1;
+
             var visual = ElementCompositionPreview.GetElementVisual(element);
             var compositor = visual.Compositor;
 
@@ -70,6 +97,19 @@ namespace CSD.Helpers
 
         public static void AnimateToOpacity(UIElement element, float toOpacity, double durationMs = 220)
         {
+            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
+            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+
+            if (!enabled)
+            {
+                var visualOpacity = ElementCompositionPreview.GetElementVisual(element);
+                visualOpacity.Opacity = toOpacity;
+                return;
+            }
+
+            if (!highFramerate) durationMs = 0;
+            if (durationMs < 1) durationMs = 1;
+
             if (element.XamlRoot is null && element is FrameworkElement frameworkElement)
             {
                 RoutedEventHandler? loadedHandler = null;
@@ -96,6 +136,19 @@ namespace CSD.Helpers
 
         public static void AnimateOffsetY(UIElement element, float toY, double durationMs = 240, float overshoot = 4f)
         {
+            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
+            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+
+            if (!enabled)
+            {
+                var visualOffset = ElementCompositionPreview.GetElementVisual(element);
+                visualOffset.Offset = new Vector3(visualOffset.Offset.X, toY, visualOffset.Offset.Z);
+                return;
+            }
+
+            if (!highFramerate) durationMs = 0;
+            if (durationMs < 1) durationMs = 1;
+
             if (element.XamlRoot is null && element is FrameworkElement frameworkElement)
             {
                 RoutedEventHandler? loadedHandler = null;
@@ -114,7 +167,7 @@ namespace CSD.Helpers
             var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.18f, 0.95f), new Vector2(0.24f, 1f));
 
             var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
-            if (Math.Abs(toY - currentOffset.Y) > 0.5f)
+            if (Math.Abs(toY - currentOffset.Y) > 0.5f && durationMs > 1)
             {
                 float overshootY = toY + (toY > currentOffset.Y ? overshoot : -overshoot);
                 offsetAnimation.InsertKeyFrame(0.82f, new Vector3(currentOffset.X, overshootY, currentOffset.Z), easing);
@@ -128,6 +181,19 @@ namespace CSD.Helpers
 
         public static void AnimateScaleTo(UIElement element, float toScale, double durationMs = 220, float overshoot = 0.02f)
         {
+            var enabled = (bool)(AppSettings.Values["Settings_PageTransitionAnimations"] ?? true);
+            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+
+            if (!enabled)
+            {
+                var visualScale = ElementCompositionPreview.GetElementVisual(element);
+                visualScale.Scale = new Vector3(toScale, toScale, 1f);
+                return;
+            }
+
+            if (!highFramerate) durationMs = 0;
+            if (durationMs < 1) durationMs = 1;
+
             if (element.XamlRoot is null && element is FrameworkElement frameworkElement)
             {
                 RoutedEventHandler? loadedHandler = null;
@@ -153,7 +219,7 @@ namespace CSD.Helpers
 
             var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.18f, 0.95f), new Vector2(0.24f, 1f));
             var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();
-            if (overshoot > 0)
+            if (overshoot > 0 && durationMs > 1)
             {
                 scaleAnimation.InsertKeyFrame(0.7f, new Vector3(toScale + overshoot, toScale + overshoot, 1f), easing);
             }
@@ -166,6 +232,18 @@ namespace CSD.Helpers
 
         public static void AnimateBrushColor(SolidColorBrush brush, Windows.UI.Color toColor, double durationMs = 220)
         {
+            var enabled = (bool)(AppSettings.Values["Settings_ElementInteractionAnimations"] ?? true);
+            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+
+            if (!enabled)
+            {
+                brush.Color = toColor;
+                return;
+            }
+
+            if (!highFramerate) durationMs = 0;
+            if (durationMs < 1) durationMs = 1;
+
             var animation = new ColorAnimation
             {
                 To = toColor,
@@ -248,6 +326,18 @@ namespace CSD.Helpers
         private static void AnimateInteraction(UIElement element, float scale, double durationMs)
         {
             var visual = ElementCompositionPreview.GetElementVisual(element);
+            var enabled = (bool)(AppSettings.Values["Settings_ElementInteractionAnimations"] ?? true);
+            var highFramerate = (bool)(AppSettings.Values["Settings_HighFramerateRendering"] ?? true);
+            
+            if (!enabled)
+            {
+                visual.Scale = new Vector3(1f, 1f, 1f);
+                return;
+            }
+
+            if (!highFramerate) durationMs = 0; // Instant if low framerate requested
+            if (durationMs < 1) durationMs = 1;
+
             var compositor = visual.Compositor;
 
             var scaleAnimation = compositor.CreateVector3KeyFrameAnimation();

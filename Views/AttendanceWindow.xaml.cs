@@ -1,4 +1,4 @@
-﻿using Microsoft.UI;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -51,6 +51,7 @@ namespace CSD.Views
         {
             InitializeComponent();
             _attendanceDate = attendanceDate;
+            VisualHelper.ApplyWindowBackdrop(this);
 
             ExtendsContentIntoTitleBar = true;
             this.AppWindow.Resize(new SizeInt32(900, 600));

@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Windowing;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
@@ -72,6 +72,7 @@ namespace CSD.Views
         {
             InitializeComponent();
             ConfigureIntegratedTitleBar();
+            VisualHelper.ApplyWindowBackdrop(this);
 
             // 设置窗口标题栏图标
             try
@@ -829,6 +830,7 @@ namespace CSD.Views
             {
                 RestartAutoRefreshTimer();
                 _ = RefreshAllGlobalComponentsAsync();
+                VisualHelper.ApplyWindowBackdrop(this);
 
                 // 如果关闭了调试模式，关闭调试窗口
                 if (!DebugWindow.IsDebugModeEnabled() && _debugWindow != null)

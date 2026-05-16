@@ -1,4 +1,4 @@
-﻿using Microsoft.UI;
+using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -34,6 +34,7 @@ namespace CSD.Views
         public CarouselWindow(List<HomeworkItem> items)
         {
             InitializeComponent();
+            VisualHelper.ApplyWindowBackdrop(this);
 
             _carouselItems = items ?? new List<HomeworkItem>();
 

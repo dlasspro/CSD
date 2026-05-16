@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -26,6 +26,14 @@ namespace CSD.Models
         /// </summary>
         public static Uri GetAssetUri(string relativePath)
         {
+            // Implementation for "High-Res Resource Loading" setting
+            var isHighResEnabled = (bool)(Values["Settings_HighResResourceLoading"] ?? true);
+            if (!isHighResEnabled)
+            {
+                // In a real scenario, we might look for a .lowres version or smaller file
+                // For now, we just log or provide a hook for future optimized assets
+            }
+
             var exeDir = AppContext.BaseDirectory;
             var fullPath = Path.Combine(exeDir, relativePath);
             if (File.Exists(fullPath))

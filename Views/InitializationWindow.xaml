@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Window
     x:Class="CSD.Views.InitializationWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -480,6 +480,79 @@
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Click="BackToOptions_Click"
                         Content="← 返回" />
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="PerformancePanel"
+                    Visibility="Collapsed"
+                    Spacing="20">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            FontSize="22"
+                            FontWeight="SemiBold"
+                            Text="性能优化建议" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="基于你的设备配置，我们为你推荐了最佳方案" />
+                    </StackPanel>
+
+                    <Grid Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" 
+                          Padding="24" CornerRadius="12">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                                <TextBlock x:Name="InitScoreText" FontSize="48" FontWeight="Bold" Foreground="#4CAF50" Text="--" />
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock x:Name="InitRatingText" FontSize="18" FontWeight="SemiBold" Text="正在检测..." />
+                                    <TextBlock x:Name="InitRatingDescText" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="请稍候..." />
+                                </StackPanel>
+                            </StackPanel>
+                            
+                            <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}" Margin="0,4" />
+                            
+                            <Grid ColumnSpacing="12" RowSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                
+                                <FontIcon Grid.Row="0" Grid.Column="0" Glyph="&#xE950;" FontSize="16" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock x:Name="InitCpuText" Grid.Row="0" Grid.Column="1" FontSize="13" VerticalAlignment="Center" Text="处理器加载中..." />
+                                
+                                <FontIcon Grid.Row="1" Grid.Column="0" Glyph="&#xEEDE;" FontSize="16" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                <TextBlock x:Name="InitGpuText" Grid.Row="1" Grid.Column="1" FontSize="13" VerticalAlignment="Center" Text="显卡加载中..." />
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="已为你开启的优化项" FontSize="14" FontWeight="SemiBold" Margin="4,0" />
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1" CornerRadius="12" Padding="12">
+                            <StackPanel Spacing="10">
+                                <CheckBox x:Name="InitPageAnimCheck" Content="页面过渡动画" IsChecked="True" />
+                                <CheckBox x:Name="InitInterAnimCheck" Content="元素交互动画" IsChecked="True" />
+                                <CheckBox x:Name="InitBlurCheck" Content="背景模糊特效" IsChecked="True" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="低配设备建议关闭以上项以获得更流畅的体验" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="4,0" />
+                    </StackPanel>
+
+                    <Button
+                        x:Name="PerformanceFinishButton"
+                        HorizontalAlignment="Stretch"
+                        Height="44"
+                        Click="PerformanceFinishButton_Click"
+                        Content="完成配置"
+                        Background="#0078D4"
+                        Foreground="White"
+                        CornerRadius="22" />
                 </StackPanel>
             </StackPanel>
             </ScrollViewer>

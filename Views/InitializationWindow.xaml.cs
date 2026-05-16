@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Windowing;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -64,6 +64,7 @@ namespace CSD.Views
             InitializeComponent();
             BuildAnimationVisuals();
             ConfigureIntegratedTitleBar();
+            VisualHelper.ApplyWindowBackdrop(this);
             SetChoiceIcons();
 
             try
@@ -574,6 +575,72 @@ namespace CSD.Views
             CloudChoicePanel.Visibility = Visibility.Collapsed;
             TokenInputPanel.Visibility = Visibility.Collapsed;
             DeviceAuthPanel.Visibility = Visibility.Collapsed;
+            PerformancePanel.Visibility = Visibility.Collapsed;
+        }
+
+        private async void ShowPerformancePanel(bool animate = true)
+        {
+            ResetOobeViewport();
+            WelcomeText.Visibility = Visibility.Collapsed;
+            InstructionText.Visibility = Visibility.Collapsed;
+            HideAllOobePanels();
+            PerformancePanel.Visibility = Visibility.Visible;
+
+            if (animate)
+            {
+                AnimateOobePanel(PerformancePanel);
+            }
+
+            // Start detection
+            InitScoreText.Text = "--";
+            InitRatingText.Text = "正在评估...";
+            
+            var info = await Task.Run(() => PerformanceService.GetPerformanceInfo());
+
+            InitScoreText.Text = info.Score.ToString();
+            InitRatingText.Text = info.Rating;
+            InitRatingDescText.Text = info.RatingDescription;
+
+            if (info.Cpus.Count > 0) InitCpuText.Text = info.Cpus[0].Model;
+            if (info.Gpus.Count > 0) InitGpuText.Text = info.Gpus[0].Name;
+
+            // Apply smart presets
+            if (info.Score <= 40)
+            {
+                InitPageAnimCheck.IsChecked = false;
+                InitInterAnimCheck.IsChecked = false;
+                InitBlurCheck.IsChecked = false;
+                InitScoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.OrangeRed);
+            }
+            else if (info.Score <= 60)
+            {
+                InitBlurCheck.IsChecked = false;
+                InitScoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Orange);
+            }
+            else
+            {
+                InitScoreText.Foreground = new SolidColorBrush(Microsoft.UI.Colors.LimeGreen);
+            }
+        }
+
+        private void PerformanceFinishButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Persist the choices from the init screen
+            AppSettings.Values["Settings_PageTransitionAnimations"] = InitPageAnimCheck.IsChecked == true;
+            AppSettings.Values["Settings_ElementInteractionAnimations"] = InitInterAnimCheck.IsChecked == true;
+            AppSettings.Values["Settings_BackgroundBlurEffects"] = InitBlurCheck.IsChecked == true;
+
+            var mainWindow = new MainWindow();
+            mainWindow.Activate();
+            Close();
+        }
+
+        private void FinalizeLogin(string token, string? provider = "Classworks 云端存储")
+        {
+            AppSettings.Values[TokenSettingsKey] = token;
+            if (provider != null) AppSettings.Values["Settings_DataProvider"] = provider;
+            
+            ShowPerformancePanel();
         }
 
         private void ResetOobeViewport()
@@ -799,11 +866,7 @@ namespace CSD.Views
                 return;
             }
 
-            AppSettings.Values[TokenSettingsKey] = TokenBox.Password;
-
-            var mainWindow = new MainWindow();
-            mainWindow.Activate();
-            Close();
+            FinalizeLogin(TokenBox.Password);
         }
 
         private void TutorialButton_Click(object sender, RoutedEventArgs e)
@@ -851,10 +914,7 @@ namespace CSD.Views
 
         private void LocalModeCard_Tapped(object sender, RoutedEventArgs e)
         {
-            AppSettings.Values["Settings_DataProvider"] = "本地存储";
-            var mainWindow = new MainWindow();
-            mainWindow.Activate();
-            Close();
+            FinalizeLogin("", "本地存储");
         }
 
         private void CloudSyncButton_Click(object sender, RoutedEventArgs e)
@@ -894,12 +954,7 @@ namespace CSD.Views
                     if (doc.RootElement.TryGetProperty("token", out var tokenElement))
                     {
                         string token = tokenElement.GetString() ?? "";
-                        AppSettings.Values[TokenSettingsKey] = token;
-                        AppSettings.Values["Settings_DataProvider"] = "Classworks 云端存储";
-
-                        var mainWindow = new MainWindow();
-                        mainWindow.Activate();
-                        Close();
+                        FinalizeLogin(token);
                         return;
                     }
                 }
@@ -917,10 +972,7 @@ namespace CSD.Views
 
         private void LocalOnlyButton_Click(object sender, RoutedEventArgs e)
         {
-            AppSettings.Values["Settings_DataProvider"] = "本地存储";
-            var mainWindow = new MainWindow();
-            mainWindow.Activate();
-            Close();
+            FinalizeLogin("", "本地存储");
         }
 
         private void BackToOptions_Click(object sender, RoutedEventArgs e)
@@ -974,17 +1026,12 @@ namespace CSD.Views
                         if (doc.RootElement.TryGetProperty("token", out var tokenElement))
                         {
                             string token = tokenElement.GetString() ?? "";
-                            AppSettings.Values[TokenSettingsKey] = token;
-                            AppSettings.Values["Settings_DataProvider"] = "Classworks 云端存储";
-
                             if (doc.RootElement.TryGetProperty("device", out var deviceElement) && deviceElement.TryGetProperty("uuid", out var uuidElement))
                             {
                                 AppSettings.Values["Settings_DeviceUuid"] = uuidElement.GetString() ?? "";
                             }
 
-                            var mainWindow = new MainWindow();
-                            mainWindow.Activate();
-                            Close();
+                            FinalizeLogin(token);
                             return;
                         }
                     }

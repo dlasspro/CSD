@@ -1,4 +1,4 @@
-﻿using CSD.Settings;
+using CSD.Settings;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -57,11 +57,14 @@ namespace CSD.Views
 
         public SettingsWindow(Action onSettingsChanged)
         {
-            _onSettingsChanged = onSettingsChanged;
+            _onSettingsChanged = () => {
+                onSettingsChanged();
+                VisualHelper.ApplyWindowBackdrop(this);
+            };
             _settingsContext = new SettingsContext(this, _settingsHttpClient);
 
             Title = "设置";
-            SystemBackdrop = new MicaBackdrop();
+            VisualHelper.ApplyWindowBackdrop(this);
 
             _pageTitleText = new TextBlock
             {
@@ -134,6 +137,7 @@ namespace CSD.Views
             _modules.Add(new DisplaySettingsModule());
             _modules.Add(new PlaybackSettingsModule());
             _modules.Add(new RandomPickerSettingsModule());
+            _modules.Add(new PerformanceSettingsModule());
             _modules.Add(new AutoStartSettingsModule());
             _modules.Add(new AccountSettingsModule());
             _modules.Add(new UpdateSettingsModule());
