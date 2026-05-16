@@ -312,7 +312,9 @@ namespace CSD
 
             if (string.IsNullOrEmpty(line))
             {
-                paragraph.Inlines.Add(new Run { Text = " ", FontSize = fontSize, Foreground = foreground });
+                var run = new Run { Text = " ", FontSize = fontSize };
+                if (foreground != null) run.Foreground = foreground;
+                paragraph.Inlines.Add(run);
                 return paragraph;
             }
 
@@ -351,7 +353,9 @@ namespace CSD
                 line[digitEnd] == '.' && line[digitEnd + 1] == ' ')
             {
                 var numberText = line.AsSpan(0, digitEnd + 2);
-                paragraph.Inlines.Add(new Run { Text = numberText.ToString(), FontSize = fontSize, Foreground = foreground });
+                var run = new Run { Text = numberText.ToString(), FontSize = fontSize };
+                if (foreground != null) run.Foreground = foreground;
+                paragraph.Inlines.Add(run);
                 AppendInlineContent(paragraph.Inlines, line.AsSpan(digitEnd + 2), fontSize, foreground);
                 return paragraph;
             }
@@ -359,7 +363,9 @@ namespace CSD
             // 无序列表
             if (line.Length >= 2 && (line[0] == '-' || line[0] == '*') && line[1] == ' ')
             {
-                paragraph.Inlines.Add(new Run { Text = "• ", FontSize = fontSize, Foreground = foreground });
+                var run = new Run { Text = "• ", FontSize = fontSize };
+                if (foreground != null) run.Foreground = foreground;
+                paragraph.Inlines.Add(run);
                 AppendInlineContent(paragraph.Inlines, line.AsSpan(2), fontSize, foreground);
                 return paragraph;
             }

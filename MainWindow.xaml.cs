@@ -1239,21 +1239,23 @@ namespace CSD
             if (string.IsNullOrWhiteSpace(content))
                 return content;
 
-            // 先检查是否至少有一行有编号（如果有则完全不处理，返回原内容）
-            var linesForCheck = content.Split('\n');
-            bool hasAnyNumbering = linesForCheck.Any(line => 
-                System.Text.RegularExpressions.Regex.IsMatch(line.Trim(), @"^\d+\.\s"));
-
-            if (hasAnyNumbering)
-                return content;
-
-            // 没有编号时，添加编号
+            // 统一移除所有空行，保持行为一致，避免出现一堆空格（空行）
             var validLines = content.Split('\n')
                 .Where(l => !string.IsNullOrWhiteSpace(l))
                 .ToList();
 
+            if (validLines.Count == 0)
+                return string.Empty;
+
+            // 先检查是否至少有一行有编号（如果有则完全不处理编号，仅返回去除了空行的内容）
+            bool hasAnyNumbering = validLines.Any(line => 
+                System.Text.RegularExpressions.Regex.IsMatch(line.TrimStart(), @"^\d+\.(\s|$)"));
+
+            if (hasAnyNumbering)
+                return string.Join("\n", validLines);
+
             if (validLines.Count <= 1)
-                return content;
+                return string.Join("\n", validLines);
 
             var numberedLines = validLines.Select((line, index) => $"{index + 1}. {line.Trim()}");
             return string.Join("\n", numberedLines);
