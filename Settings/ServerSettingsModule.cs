@@ -1,4 +1,4 @@
-﻿using Microsoft.UI;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -22,7 +22,7 @@ namespace CSD.Settings
     {
         public override string CategoryKey => "server";
         public override string Title => "服务器";
-        public override string Description => "";
+        public override string Description => "配置数据提供者、云端同步选项及查看设备信息。";
         public override string ImageIconUri => AppSettings.GetAssetUri("icons/ic_gallery_cloud_synchronization.ico").AbsoluteUri;
 
         private ComboBox _dataProviderCombo = null!;
@@ -58,7 +58,7 @@ namespace CSD.Settings
 
         protected override FrameworkElement BuildContent()
         {
-            _serverUrlBox = new TextBox { PlaceholderText = "https://kv-service.wuyuan.dev" };
+            _serverUrlBox = new TextBox { PlaceholderText = "https://kv-service.wuyuan.dev", HorizontalAlignment = HorizontalAlignment.Stretch };
             _kvTokenBox = new TextBox
             {
                 AcceptsReturn = false,
@@ -69,7 +69,7 @@ namespace CSD.Settings
                 PlaceholderText = "粘贴 KV 授权令牌"
             };
 
-            _deviceOwnerTitleText = new TextBlock { Text = "未知管理员", FontSize = 24, FontWeight = Microsoft.UI.Text.FontWeights.Bold, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] };
+            _deviceOwnerTitleText = new TextBlock { Text = "未知管理员", FontSize = 20, FontWeight = Microsoft.UI.Text.FontWeights.Bold, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] };
             _deviceOwnerSubText = SettingsUIHelper.CreateSecondaryWrappedText("管理员账号 ID: —\n此设备由贵校或贵单位管理，该管理员系此空间所有者，如有疑问请咨询他，对于恶意绑定、滥用行为请反馈。", 13);
             _deviceNameText = SettingsUIHelper.CreateSecondaryWrappedText("—");
             _deviceUuidText = SettingsUIHelper.CreateSecondaryWrappedText("—");
@@ -81,14 +81,10 @@ namespace CSD.Settings
             foreach (var label in DataProviderOptions)
                 _dataProviderCombo.Items.Add(label);
 
-            var root = new StackPanel { Spacing = 22 };
+            var root = new StackPanel { Spacing = 20 };
 
-            var titleRow = new StackPanel();
-            titleRow.Children.Add(new TextBlock { Text = "数据源设置", FontSize = 26, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-            root.Children.Add(titleRow);
-
-            root.Children.Add(new TextBlock { Text = "数据提供者", FontSize = 13, Margin = new Thickness(0, 2, 0, 4), Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] });
-            root.Children.Add(_dataProviderCombo);
+            root.Children.Add(SettingsUIHelper.CreateSettingsGroup("数据源",
+                SettingsUIHelper.CreateSettingRow("数据提供者", "选择存储和同步作业数据的方式。", new FontIcon { Glyph = "\uE753" }, _dataProviderCombo)));
 
             var bannerHost = new Grid();
             _cloudStorageBanner = CreateBanner("Classworks 云端存储", "Classworks云端存储是官方提供的存储解决方案，自动配置了最优的访问设置。\n使用此选项时，服务器域名和网站令牌将自动配置，无需手动设置。", "\uE946", ColorHelper.FromArgb(255, 26, 56, 42), ColorHelper.FromArgb(255, 165, 224, 190));
@@ -174,17 +170,10 @@ namespace CSD.Settings
 
         private UIElement BuildCloudContent()
         {
-            var stack = new StackPanel { Spacing = 22 };
+            var stack = new StackPanel { Spacing = 20 };
 
-            var tokenContainer = new StackPanel { Spacing = 4 };
-            tokenContainer.Children.Add(CreateFieldWithIcon("\uEA18", "KV 授权令牌", _kvTokenBox));
-            tokenContainer.Children.Add(new TextBlock { Text = "令牌用于云端存储授权", FontSize = 12, Margin = new Thickness(34, 0, 0, 0), Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"] });
-            stack.Children.Add(tokenContainer);
-
-            var accountHeader = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(0, 6, 0, 0) };
-            accountHeader.Children.Add(new FontIcon { Glyph = "\uE77B", FontSize = 20, VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] });
-            accountHeader.Children.Add(new TextBlock { Text = "账号信息", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-            stack.Children.Add(accountHeader);
+            stack.Children.Add(SettingsUIHelper.CreateSettingsGroup("身份验证",
+                SettingsUIHelper.CreateCompoundSettingRow("KV 授权令牌", "用于访问云端存储的令牌。", _kvTokenBox, new FontIcon { Glyph = "\uEA18" })));
 
             _unboundWarningCard = CreateUnboundWarningCard();
             stack.Children.Add(_unboundWarningCard);
@@ -196,26 +185,18 @@ namespace CSD.Settings
             _manageCard.Visibility = Visibility.Collapsed;
             stack.Children.Add(_manageCard);
 
-            var deviceHeader = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(0, 6, 0, 0) };
-            deviceHeader.Children.Add(new Image { Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_device_matebook.ico")), Width = 20, Height = 20, VerticalAlignment = VerticalAlignment.Center });
-            deviceHeader.Children.Add(new TextBlock { Text = "设备信息", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-            stack.Children.Add(deviceHeader);
-
             var techInner = new StackPanel { Spacing = 12 };
             techInner.Children.Add(CreateDeviceIconRow("\uE8EC", _deviceNameText));
             techInner.Children.Add(CreateDeviceIconRow("\uE811", _deviceUuidText));
             techInner.Children.Add(CreateDeviceIconRow("\uE716", _deviceIdText));
             techInner.Children.Add(CreateDeviceIconRow("\uE787", _deviceCreatedText));
             techInner.Children.Add(CreateDeviceIconRow("\uE72C", _deviceUpdatedText));
-            stack.Children.Add(SettingsUIHelper.CreateFilledCard(techInner));
+            
+            stack.Children.Add(SettingsUIHelper.CreateSettingsGroup("设备信息", SettingsUIHelper.CreateFilledCard(techInner)));
 
             var refreshBtn = new Button
             {
                 Content = "刷新设备信息",
-                Background = new SolidColorBrush(SettingsUIHelper.WithAlpha(SettingsUIHelper.GetBrushColor("TextFillColorPrimaryBrush", Colors.White), 0)),
-                BorderBrush = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"],
-                BorderThickness = new Thickness(1),
-                Foreground = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"],
                 Padding = new Thickness(16, 8, 16, 8),
                 CornerRadius = new CornerRadius(8)
             };
@@ -224,7 +205,7 @@ namespace CSD.Settings
             var dangerBrush = (Brush)Application.Current.Resources["SystemFillColorCriticalBrush"];
             var reinitBtn = new Button
             {
-                Content = "重新初始化云端存储",
+                Content = "重新初始化",
                 Background = new SolidColorBrush(SettingsUIHelper.WithAlpha(SettingsUIHelper.GetBrushColor("TextFillColorPrimaryBrush", Colors.White), 0)),
                 BorderBrush = dangerBrush,
                 BorderThickness = new Thickness(1),
@@ -234,7 +215,7 @@ namespace CSD.Settings
             };
             reinitBtn.Click += ReinitBtn_Click;
 
-            var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 12, Margin = new Thickness(0, 12, 0, 0) };
+            var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 12 };
             footer.Children.Add(refreshBtn);
             footer.Children.Add(reinitBtn);
             stack.Children.Add(footer);
@@ -244,44 +225,17 @@ namespace CSD.Settings
 
         private UIElement BuildCustomServerContent()
         {
-            var stack = new StackPanel { Spacing = 22, Visibility = Visibility.Collapsed };
-
-            var customServerUrlContainer = new StackPanel { Spacing = 4 };
-            customServerUrlContainer.Children.Add(CreateFieldWithIcon("\uE774", "服务器地址", _serverUrlBox));
-            customServerUrlContainer.Children.Add(new TextBlock { Text = "KV存储系统使用本机唯一标识符(UUID)来区分不同设备的数据。\n服务器端点格式: http(s)://服务器域名/\n在服务器域名处仅填写基础URL，不需要任何路径。", FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(34, 0, 0, 0), Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"] });
-            stack.Children.Add(customServerUrlContainer);
+            var stack = new StackPanel { Spacing = 20, Visibility = Visibility.Collapsed };
 
             var customTokenBox = new TextBox { AcceptsReturn = false, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), MinHeight = 40, HorizontalAlignment = HorizontalAlignment.Stretch, PlaceholderText = "粘贴 KV 授权令牌" };
             customTokenBox.TextChanged += (s, e) => { _kvTokenBox.Text = customTokenBox.Text; };
             _kvTokenBox.TextChanged += (s, e) => { customTokenBox.Text = _kvTokenBox.Text; };
 
-            var customTokenContainer = new StackPanel { Spacing = 4 };
-            customTokenContainer.Children.Add(CreateFieldWithIcon("\uEA18", "KV 授权令牌", customTokenBox));
-            customTokenContainer.Children.Add(new TextBlock { Text = "令牌用于云端存储授权", FontSize = 12, Margin = new Thickness(34, 0, 0, 0), Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"] });
-            stack.Children.Add(customTokenContainer);
+            stack.Children.Add(SettingsUIHelper.CreateSettingsGroup("自定义服务器",
+                SettingsUIHelper.CreateCompoundSettingRow("服务器地址", "KV 存储系统的服务端点。", _serverUrlBox, new FontIcon { Glyph = "\uE774" }),
+                SettingsUIHelper.CreateCompoundSettingRow("KV 授权令牌", "用于授权访问的令牌。", customTokenBox, new FontIcon { Glyph = "\uEA18" })));
 
             return stack;
-        }
-
-        private Grid CreateFieldWithIcon(string glyph, string label, TextBox textBox)
-        {
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            
-            var icon = new FontIcon { Glyph = glyph, FontSize = 22, Margin = new Thickness(0, 14, 12, 0), VerticalAlignment = VerticalAlignment.Top, Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] };
-            Grid.SetColumn(icon, 0);
-
-            var frame = new Grid();
-            var border = new Border { BorderBrush = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"], BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 16, 10, 10), Child = textBox };
-            var labelChip = new Border { Background = (Brush)Application.Current.Resources["ApplicationPageBackgroundThemeBrush"], Padding = new Thickness(8, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, -11, 0, 0), Child = new TextBlock { Text = label, FontSize = 12, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold } };
-            frame.Children.Add(border);
-            frame.Children.Add(labelChip);
-            
-            Grid.SetColumn(frame, 1);
-            grid.Children.Add(icon);
-            grid.Children.Add(frame);
-            return grid;
         }
 
         private static StackPanel CreateDeviceIconRow(string glyph, TextBlock line)

@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 
@@ -34,11 +34,13 @@ namespace CSD.Settings
             _randomPickerAnimationToggle = new ToggleSwitch { OnContent = null, OffContent = null, MinWidth = 0, Margin = new Thickness(0) };
 
             return SettingsUIHelper.CreateCategoryView(
-                SettingsUIHelper.CreateSettingRow("是否启用随机点名功能", "控制随机点名功能的开关。", _randomPickerEnabledToggle),
-                SettingsUIHelper.CreateSettingRow("学号模式最小值", "学号模式下可抽取的最小学号。", _randomPickerMinNumberBox),
-                SettingsUIHelper.CreateSettingRow("学号模式最大值", "学号模式下可抽取的最大学号。", _randomPickerMaxNumberBox),
-                SettingsUIHelper.CreateSettingRow("默认抽取人数", "打开随机点名窗口时的默认抽取人数。", _randomPickerDefaultCountBox),
-                SettingsUIHelper.CreateSettingRow("是否启用随机点名动画效果", "控制点名时是否播放滚动动画。", _randomPickerAnimationToggle));
+                SettingsUIHelper.CreateSettingsGroup("常规",
+                    SettingsUIHelper.CreateSettingRow("启用功能", "开启或关闭点名器入口。", new FontIcon { Glyph = "\uE73E" }, _randomPickerEnabledToggle),
+                    SettingsUIHelper.CreateSettingRow("动画效果", "点名时是否播放滚动动画。", new FontIcon { Glyph = "\uE916" }, _randomPickerAnimationToggle)),
+                SettingsUIHelper.CreateSettingsGroup("默认参数",
+                    SettingsUIHelper.CreateSettingRow("学号最小值", "学号模式下抽取的下限。", new FontIcon { Glyph = "\uE8EF" }, _randomPickerMinNumberBox),
+                    SettingsUIHelper.CreateSettingRow("学号最大值", "学号模式下抽取的上限。", new FontIcon { Glyph = "\uE8EF" }, _randomPickerMaxNumberBox),
+                    SettingsUIHelper.CreateSettingRow("默认人数", "窗口打开时预设的抽取人数。", new FontIcon { Glyph = "\uE716" }, _randomPickerDefaultCountBox)));
         }
 
         private static double ConvertToDouble(object? value, double defaultValue)

@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -25,7 +25,7 @@ namespace CSD.Settings
     {
         public override string CategoryKey => "roster";
         public override string Title => "名单";
-        public override string Description => "";
+        public override string Description => "管理学生名单，支持排序、高级编辑及云端同步。";
         public override string Glyph => "\uE716";
 
         private TextBox _rosterNameInput = null!;
@@ -35,54 +35,40 @@ namespace CSD.Settings
 
         protected override FrameworkElement BuildContent()
         {
-            var root = new StackPanel { Spacing = 16 };
+            var root = new StackPanel { Spacing = 20 };
 
-            var headerGrid = new Grid();
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var titleStack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-            titleStack.Children.Add(new FontIcon { Glyph = "\uE716", FontSize = 26, VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] });
-            titleStack.Children.Add(new TextBlock { Text = "学生列表", FontSize = 24, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-            Grid.SetColumn(titleStack, 0);
-            headerGrid.Children.Add(titleStack);
-
-            var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            var sortBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE8CB", "按姓名排序"), Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), BorderThickness = new Thickness(0), Padding = new Thickness(8, 4, 8, 4) };
+            var sortBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE8CB", "排序"), Padding = new Thickness(12, 6, 12, 6), CornerRadius = new CornerRadius(8) };
             sortBtn.Click += (_, _) => SortRosterByName();
-            var advBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE943", "高级编辑"), Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), BorderThickness = new Thickness(0), Padding = new Thickness(8, 4, 8, 4) };
+            
+            var advBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE943", "编辑"), Padding = new Thickness(12, 6, 12, 6), CornerRadius = new CornerRadius(8) };
             advBtn.Click += async (_, _) => await AdvancedEditRosterAsync();
-            var cloudReloadBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE72C", "从云端加载"), Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), BorderThickness = new Thickness(0), Padding = new Thickness(8, 4, 8, 4), Foreground = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"] };
+            
+            var cloudReloadBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE72C", "同步"), Padding = new Thickness(12, 6, 12, 6), CornerRadius = new CornerRadius(8) };
             cloudReloadBtn.Click += async (_, _) => await ReloadRosterFromKvAsync(showErrors: true);
-            toolbar.Children.Add(sortBtn); toolbar.Children.Add(advBtn); toolbar.Children.Add(cloudReloadBtn);
-            Grid.SetColumn(toolbar, 1);
-            headerGrid.Children.Add(toolbar);
-            root.Children.Add(headerGrid);
 
-            var addRow = new Grid();
-            addRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            addRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            _rosterNameInput = new TextBox { PlaceholderText = "添加学生", MinHeight = 40, HorizontalAlignment = HorizontalAlignment.Stretch, BorderBrush = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"], BorderThickness = new Thickness(1) };
+            var saveRosterBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE74E", "推送"), Style = (Style)Application.Current.Resources["AccentButtonStyle"], Padding = new Thickness(12, 6, 12, 6), CornerRadius = new CornerRadius(8) };
+            saveRosterBtn.Click += async (_, _) => await SaveRosterToKvAsync(showErrors: true);
+
+            var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
+            toolbar.Children.Add(sortBtn);
+            toolbar.Children.Add(advBtn);
+            toolbar.Children.Add(cloudReloadBtn);
+            toolbar.Children.Add(saveRosterBtn);
+
+            root.Children.Add(SettingsUIHelper.CreateSettingsGroup("操作",
+                SettingsUIHelper.CreateSettingRow("名单管理", "管理学生名单并与云端同步。", new FontIcon { Glyph = "\uE716" }, toolbar)));
+
+            _rosterNameInput = new TextBox { PlaceholderText = "输入学生姓名后按回车添加...", HorizontalAlignment = HorizontalAlignment.Stretch };
             _rosterNameInput.KeyDown += RosterNameInput_KeyDown;
-            Grid.SetColumn(_rosterNameInput, 0);
-            var addBtn = new Button { Content = new FontIcon { Glyph = "\uE710", FontSize = 18 }, MinWidth = 44, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Stretch };
-            addBtn.Click += (_, _) => TryAddRosterStudentFromInput();
-            Grid.SetColumn(addBtn, 1);
-            addRow.Children.Add(_rosterNameInput); addRow.Children.Add(addBtn);
-            root.Children.Add(addRow);
 
             _rosterCardsGrid = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
-            var rosterScroll = new ScrollViewer { MaxHeight = 520, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = _rosterCardsGrid };
-            var rosterBorder = new Border { BorderBrush = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"], BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(8), Child = rosterScroll };
-            root.Children.Add(rosterBorder);
+            var listContainer = new StackPanel { Spacing = 12 };
+            listContainer.Children.Add(_rosterNameInput);
+            listContainer.Children.Add(new Border { Height = 1, Background = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"] });
+            listContainer.Children.Add(new ScrollViewer { MaxHeight = 400, Content = _rosterCardsGrid });
 
-            var footer = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, Margin = new Thickness(0, 8, 0, 0) };
-            var saveRosterBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE74E", "保存名单"), Padding = new Thickness(18, 10, 18, 10), CornerRadius = new CornerRadius(8), Background = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"], Foreground = new SolidColorBrush(Microsoft.UI.Colors.White) };
-            saveRosterBtn.Click += async (_, _) => await SaveRosterToKvAsync(showErrors: true);
-            var resetRosterBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE777", "重置名单"), Padding = new Thickness(16, 10, 16, 10), CornerRadius = new CornerRadius(8), Background = (Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"] };
-            resetRosterBtn.Click += async (_, _) => await ResetRosterWithConfirmAsync();
-            footer.Children.Add(saveRosterBtn); footer.Children.Add(resetRosterBtn);
-            root.Children.Add(footer);
+            root.Children.Add(SettingsUIHelper.CreateSettingsGroup("名单列表",
+                new Border { Padding = new Thickness(16, 12, 16, 12), Child = listContainer }));
 
             return root;
         }

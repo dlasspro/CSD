@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 
@@ -32,10 +32,11 @@ namespace CSD.Settings
             _contentFontSizeBox = SettingsUIHelper.CreateNumberBoxWithoutHeader(8, 36, 1, 15);
 
             return SettingsUIHelper.CreateCategoryView(
-                SettingsUIHelper.CreateSettingRow("最小卡片宽度", "影响首页作业卡片的最小宽度。", _minCardWidthBox),
-                SettingsUIHelper.CreateSettingRow("卡片间距", "首页卡片之间的间距大小。", _cardGapBox),
-                SettingsUIHelper.CreateSettingRow("科目字体大小", "控制作业科目标题的字号。", _subjectFontSizeBox),
-                SettingsUIHelper.CreateSettingRow("内容字体大小", "控制作业详情内容的字号。", _contentFontSizeBox));
+                SettingsUIHelper.CreateSettingsGroup("外观",
+                    SettingsUIHelper.CreateSettingRow("最小卡片宽度", "影响首页作业卡片的最小宽度。", new FontIcon { Glyph = "\uE740" }, _minCardWidthBox),
+                    SettingsUIHelper.CreateSettingRow("卡片间距", "首页卡片之间的间距大小。", new FontIcon { Glyph = "\uE784" }, _cardGapBox),
+                    SettingsUIHelper.CreateSettingRow("科目字体大小", "控制作业科目标题的字号。", new FontIcon { Glyph = "\uE8D2" }, _subjectFontSizeBox),
+                    SettingsUIHelper.CreateSettingRow("内容字体大小", "控制作业详情内容的字号。", new FontIcon { Glyph = "\uE8D2" }, _contentFontSizeBox)));
         }
 
         protected override void LoadSettings()

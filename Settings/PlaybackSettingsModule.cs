@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 
@@ -27,12 +27,14 @@ namespace CSD.Settings
         {
             _carouselIntervalBox = SettingsUIHelper.CreateNumberBoxWithoutHeader(1, 120, 1, 5);
             _carouselFontSizeBox = SettingsUIHelper.CreateNumberBoxWithoutHeader(16, 120, 4, 48);
-            _debugModeToggle = new ToggleSwitch();
+            _debugModeToggle = new ToggleSwitch { OnContent = null, OffContent = null, MinWidth = 0 };
 
             return SettingsUIHelper.CreateCategoryView(
-                SettingsUIHelper.CreateSettingRow("轮播切换间隔", "课堂展示时轮播的切换速度。", _carouselIntervalBox),
-                SettingsUIHelper.CreateSettingRow("轮播字体大小", "轮播模式下的展示字号。", _carouselFontSizeBox),
-                SettingsUIHelper.CreateSettingRow("调试模式", "在需要排查问题时启用。", _debugModeToggle));
+                SettingsUIHelper.CreateSettingsGroup("轮播",
+                    SettingsUIHelper.CreateSettingRow("轮播切换间隔", "课堂展示时轮播的切换速度。", new FontIcon { Glyph = "\uE916" }, _carouselIntervalBox),
+                    SettingsUIHelper.CreateSettingRow("轮播字体大小", "轮播模式下的展示字号。", new FontIcon { Glyph = "\uE8D2" }, _carouselFontSizeBox)),
+                SettingsUIHelper.CreateSettingsGroup("高级",
+                    SettingsUIHelper.CreateSettingRow("调试模式", "在需要排查问题时启用。", new FontIcon { Glyph = "\uEBE8" }, _debugModeToggle)));
         }
 
         protected override void LoadSettings()

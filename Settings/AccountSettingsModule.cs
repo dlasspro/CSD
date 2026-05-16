@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
@@ -28,31 +28,31 @@ namespace CSD.Settings
 
         protected override FrameworkElement BuildContent()
         {
-            var tokenSection = new StackPanel { Spacing = 4 };
-            tokenSection.Children.Add(new TextBlock { Text = "当前 Token 状态" });
-            
             _currentTokenText = new TextBlock
             {
+                VerticalAlignment = VerticalAlignment.Center,
                 Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
             };
-            tokenSection.Children.Add(_currentTokenText);
 
-            var destroyTokenButton = new Button { Content = "销毁 Token", Margin = new Thickness(0, 4, 0, 0) };
+            var destroyTokenButton = new Button { Content = "销毁 Token", HorizontalAlignment = HorizontalAlignment.Right };
             destroyTokenButton.Click += DestroyTokenButton_Click;
-            tokenSection.Children.Add(destroyTokenButton);
 
-            var inputTokenSection = new StackPanel { Spacing = 8 };
+            var tokenStatusRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, HorizontalAlignment = HorizontalAlignment.Right };
+            tokenStatusRow.Children.Add(_currentTokenText);
+            tokenStatusRow.Children.Add(destroyTokenButton);
+
             _tokenInputBox = new PasswordBox
             {
-                Header = "输入 Token",
                 PlaceholderText = "输入 KV 授权令牌",
-                Width = 320
+                Width = 240
             };
-            inputTokenSection.Children.Add(_tokenInputBox);
 
-            var applyTokenButton = new Button { Content = "应用 Token", Width = 120 };
+            var applyTokenButton = new Button { Content = "应用", Width = 80 };
             applyTokenButton.Click += ApplyTokenButton_Click;
-            inputTokenSection.Children.Add(applyTokenButton);
+
+            var tokenInputRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
+            tokenInputRow.Children.Add(_tokenInputBox);
+            tokenInputRow.Children.Add(applyTokenButton);
 
             var exportButton = new Button { Content = "导出设置", HorizontalAlignment = HorizontalAlignment.Stretch };
             exportButton.Click += ExportButton_Click;
@@ -70,15 +70,23 @@ namespace CSD.Settings
                 catch { }
             };
 
-            var ioStack = new StackPanel { Spacing = 8 };
+            var ioStack = new Grid { ColumnSpacing = 8 };
+            ioStack.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            ioStack.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            ioStack.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            Grid.SetColumn(exportButton, 0);
+            Grid.SetColumn(importButton, 1);
+            Grid.SetColumn(webSettingsButton, 2);
             ioStack.Children.Add(exportButton);
             ioStack.Children.Add(importButton);
             ioStack.Children.Add(webSettingsButton);
 
             return SettingsUIHelper.CreateCategoryView(
-                SettingsUIHelper.CreateSettingRow("当前 Token 状态", "查看授权状态并可重置。", tokenSection),
-                SettingsUIHelper.CreateSettingRow("输入 Token", "在此输入新的 KV 授权令牌。", inputTokenSection),
-                SettingsUIHelper.CreateSettingRow("数据管理", "导入、导出本地设置，或前往网页端。", ioStack));
+                SettingsUIHelper.CreateSettingsGroup("账户",
+                    SettingsUIHelper.CreateSettingRow("当前状态", "查看授权状态并可重置。", new FontIcon { Glyph = "\uE77B" }, tokenStatusRow),
+                    SettingsUIHelper.CreateSettingRow("输入令牌", "手动输入新的 KV 授权令牌。", new FontIcon { Glyph = "\uE8D7" }, tokenInputRow)),
+                SettingsUIHelper.CreateSettingsGroup("数据管理",
+                    SettingsUIHelper.CreateCompoundSettingRow("本地与云端", "导出、导入本地设置，或前往网页端进行管理。", ioStack, new FontIcon { Glyph = "\uE8B5" })));
         }
 
         protected override void LoadSettings()
