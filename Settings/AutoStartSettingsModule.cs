@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -37,25 +37,17 @@ namespace CSD.Settings
             
             _autoStartMethodCombo = new ComboBox
             {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                MinHeight = 40,
-                MinWidth = 260
+                HorizontalAlignment = HorizontalAlignment.Right,
+                MinHeight = 32,
+                MinWidth = 200
             };
             foreach (var label in AutoStartMethodOptions)
                 _autoStartMethodCombo.Items.Add(label);
 
-            var autoStartMethodStack = new StackPanel { Spacing = 4 };
-            autoStartMethodStack.Children.Add(new TextBlock
-            {
-                Text = "优先级方式（星级越高越推荐）",
-                FontSize = 12,
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
-            });
-            autoStartMethodStack.Children.Add(_autoStartMethodCombo);
-
             return SettingsUIHelper.CreateCategoryView(
-                SettingsUIHelper.CreateSettingRow("开机自启动", "启用后 CSD 将在系统启动时自动运行。", _autoStartToggle),
-                SettingsUIHelper.CreateSettingRow("自启动方式", "选择自启动的优先级实现方式，星级越高越稳定可靠。", autoStartMethodStack));
+                SettingsUIHelper.CreateSettingsGroup("系统行为",
+                    SettingsUIHelper.CreateSettingRow("开机自启动", "登录 Windows 时自动运行 CSD。", new FontIcon { Glyph = "\uE7E8" }, _autoStartToggle),
+                    SettingsUIHelper.CreateSettingRow("启动方式", "星级越高越稳定推荐。", new FontIcon { Glyph = "\uE946" }, _autoStartMethodCombo)));
         }
 
         protected override void LoadSettings()

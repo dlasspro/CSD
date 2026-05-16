@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 
@@ -43,61 +43,10 @@ namespace CSD.Settings
             _autoRefreshToggle = new ToggleSwitch { OnContent = null, OffContent = null, MinWidth = 0, Margin = new Thickness(0) };
             _autoRefreshIntervalBox = SettingsUIHelper.CreateNumberBoxWithoutHeader(10, 600, 10, 60);
 
-            var cardInner = new StackPanel { Spacing = 0 };
-            cardInner.Children.Add(CreateRefreshSettingCardRow(autoIcon, "自动刷新", "refresh.auto", _autoRefreshToggle, showDividerBelow: true));
-            cardInner.Children.Add(CreateRefreshSettingCardRow(intervalIcon, "刷新间隔", "refresh.interval", _autoRefreshIntervalBox, showDividerBelow: false));
-
-            return new Border
-            {
-                Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"],
-                CornerRadius = new CornerRadius(12),
-                Padding = new Thickness(0, 2, 0, 2),
-                MaxWidth = 920,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Child = cardInner
-            };
-        }
-
-        private Border CreateRefreshSettingCardRow(FrameworkElement leadingIcon, string primaryText, string keyText, FrameworkElement trailingControl, bool showDividerBelow)
-        {
-            var labelStack = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-            labelStack.Children.Add(new TextBlock { Text = primaryText, FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            labelStack.Children.Add(new TextBlock { Text = keyText, FontSize = 12, Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] });
-
-            var iconHost = new Grid { Width = 32, Height = 32, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-            leadingIcon.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-            leadingIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            iconHost.Children.Add(leadingIcon);
-
-            trailingControl.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            trailingControl.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Right);
-
-            var rowGrid = new Grid { Padding = new Thickness(16, 12, 16, 12), ColumnSpacing = 16 };
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            Grid.SetColumn(iconHost, 0);
-            Grid.SetColumn(labelStack, 1);
-            Grid.SetColumn(trailingControl, 2);
-            rowGrid.Children.Add(iconHost);
-            rowGrid.Children.Add(labelStack);
-            rowGrid.Children.Add(trailingControl);
-
-            var outer = new StackPanel { Spacing = 0 };
-            outer.Children.Add(rowGrid);
-            if (showDividerBelow)
-            {
-                outer.Children.Add(new Border
-                {
-                    Height = 1,
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
-                    Margin = new Thickness(16, 0, 16, 0)
-                });
-            }
-
-            return new Border { Child = outer };
+            return SettingsUIHelper.CreateCategoryView(
+                SettingsUIHelper.CreateSettingsGroup("刷新策略",
+                    SettingsUIHelper.CreateSettingRow("自动刷新", "定时从服务器获取最新作业数据。", autoIcon, _autoRefreshToggle),
+                    SettingsUIHelper.CreateSettingRow("刷新间隔", "自动刷新的频率（秒）。", intervalIcon, _autoRefreshIntervalBox)));
         }
 
         protected override void LoadSettings()

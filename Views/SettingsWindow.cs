@@ -1,4 +1,4 @@
-﻿using CSD.Settings;
+using CSD.Settings;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -279,18 +279,11 @@ namespace CSD.Views
 
             if (activeModule != null)
             {
-                if (string.IsNullOrEmpty(activeModule.Description))
-                {
-                    _pageTitleText.Visibility = Visibility.Collapsed;
-                    _pageDescriptionText.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    _pageTitleText.Visibility = Visibility.Visible;
-                    _pageDescriptionText.Visibility = Visibility.Visible;
-                    _pageTitleText.Text = activeModule.Title;
-                    _pageDescriptionText.Text = activeModule.Description;
-                }
+                _pageTitleText.Text = activeModule.Title;
+                _pageTitleText.Visibility = string.IsNullOrEmpty(activeModule.Title) ? Visibility.Collapsed : Visibility.Visible;
+                
+                _pageDescriptionText.Text = activeModule.Description;
+                _pageDescriptionText.Visibility = string.IsNullOrEmpty(activeModule.Description) ? Visibility.Collapsed : Visibility.Visible;
 
                 activeModule.OnNavigatedTo();
             }

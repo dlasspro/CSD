@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -25,7 +25,7 @@ namespace CSD.Settings
     {
         public override string CategoryKey => "subjects";
         public override string Title => "科目";
-        public override string Description => "";
+        public override string Description => "管理作业科目列表，并可将其同步到云端。";
         public override string Glyph => "\uE70F";
 
         private TextBox _subjectNameInput = null!;
@@ -37,35 +37,36 @@ namespace CSD.Settings
 
         protected override FrameworkElement BuildContent()
         {
-            var root = new StackPanel { Spacing = 18 };
+            var root = new StackPanel { Spacing = 20 };
 
-            var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-            titleRow.Children.Add(new FontIcon { Glyph = "\uE734", FontSize = 28, VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] });
-            titleRow.Children.Add(new TextBlock { Text = "科目管理", FontSize = 26, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-            root.Children.Add(titleRow);
-
-            var btnRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-            var reloadBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE72C", "重新加载"), Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), BorderThickness = new Thickness(0), Foreground = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"], Padding = new Thickness(8, 6, 8, 6) };
+            var reloadBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE72C", "同步"), Padding = new Thickness(12, 6, 12, 6), CornerRadius = new CornerRadius(8) };
             reloadBtn.Click += async (_, _) => await ReloadSubjectsFromKvAsync(showErrors: true);
 
-            var saveBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE74E", "保存"), Background = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 46, 125, 50)), Foreground = new SolidColorBrush(Microsoft.UI.Colors.White), BorderThickness = new Thickness(0), Padding = new Thickness(18, 10, 18, 10), CornerRadius = new CornerRadius(8) };
+            var saveBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE74E", "推送"), Style = (Style)Application.Current.Resources["AccentButtonStyle"], Padding = new Thickness(12, 6, 12, 6), CornerRadius = new CornerRadius(8) };
             saveBtn.Click += async (_, _) => await SaveSubjectsToKvAsync(showErrors: true);
 
-            var resetBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE777", "重置为默认"), Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent), BorderThickness = new Thickness(0), Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"], Padding = new Thickness(8, 6, 8, 6) };
+            var resetBtn = new Button { Content = SettingsUIHelper.CreateIconTextRow("\uE777", "重置"), Padding = new Thickness(12, 6, 12, 6), CornerRadius = new CornerRadius(8) };
             resetBtn.Click += (_, _) => ResetSubjectsToDefaults(queueCloudSync: true);
 
+            var btnRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
             btnRow.Children.Add(reloadBtn);
             btnRow.Children.Add(saveBtn);
             btnRow.Children.Add(resetBtn);
-            root.Children.Add(btnRow);
 
-            _subjectNameInput = new TextBox { PlaceholderText = "科目名称", MinHeight = 40, HorizontalAlignment = HorizontalAlignment.Stretch, BorderBrush = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"], BorderThickness = new Thickness(1) };
+            root.Children.Add(SettingsUIHelper.CreateSettingsGroup("操作",
+                SettingsUIHelper.CreateSettingRow("云端同步", "从服务器拉取或推送科目配置。", new FontIcon { Glyph = "\uE753" }, btnRow)));
+
+            _subjectNameInput = new TextBox { PlaceholderText = "输入科目名称后按回车添加...", HorizontalAlignment = HorizontalAlignment.Stretch };
             _subjectNameInput.KeyDown += SubjectNameInput_KeyDown;
-            root.Children.Add(_subjectNameInput);
 
             _subjectRowsPanel = new StackPanel();
-            var listBorder = new Border { BorderBrush = (Brush)Application.Current.Resources["ControlStrokeColorDefaultBrush"], BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(0, 4, 0, 4), Child = new ScrollViewer { MaxHeight = 440, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = _subjectRowsPanel } };
-            root.Children.Add(listBorder);
+            var listContainer = new StackPanel { Spacing = 12 };
+            listContainer.Children.Add(_subjectNameInput);
+            listContainer.Children.Add(new Border { Height = 1, Background = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"] });
+            listContainer.Children.Add(new ScrollViewer { MaxHeight = 400, Content = _subjectRowsPanel });
+
+            root.Children.Add(SettingsUIHelper.CreateSettingsGroup("科目列表",
+                new Border { Padding = new Thickness(16, 12, 16, 12), Child = listContainer }));
 
             return root;
         }

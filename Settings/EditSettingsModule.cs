@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -37,146 +37,18 @@ namespace CSD.Settings
             _editBlockNonTodayAutoSaveToggle = new ToggleSwitch { OnContent = null, OffContent = null, MinWidth = 0, Margin = new Thickness(0) };
             _editConfirmNonTodaySaveToggle = new ToggleSwitch { OnContent = null, OffContent = null, MinWidth = 0, Margin = new Thickness(0) };
             _editRefreshBeforeEditToggle = new ToggleSwitch { OnContent = null, OffContent = null, MinWidth = 0, Margin = new Thickness(0) };
-            _editAutoSavePromptTextBox = new TextBox { AcceptsReturn = false, TextWrapping = TextWrapping.Wrap, MinHeight = 40 };
-            _editManualSavePromptTextBox = new TextBox { AcceptsReturn = false, TextWrapping = TextWrapping.Wrap, MinHeight = 40 };
+            _editAutoSavePromptTextBox = new TextBox { AcceptsReturn = false, TextWrapping = TextWrapping.Wrap, MinHeight = 40, HorizontalAlignment = HorizontalAlignment.Stretch };
+            _editManualSavePromptTextBox = new TextBox { AcceptsReturn = false, TextWrapping = TextWrapping.Wrap, MinHeight = 40, HorizontalAlignment = HorizontalAlignment.Stretch };
 
-            var cardInner = new StackPanel { Spacing = 0 };
-            cardInner.Children.Add(CreateEditToggleSettingCardRow(EditSettingsGlyph("\uE74E"), "是否启用自动保存", "edit.autoSave", _editAutoSaveToggle, showDividerBelow: true));
-            cardInner.Children.Add(CreateEditToggleSettingCardRow(EditSettingsGlyph("\uE787"), "禁止写入非当天作业数据", "edit.blockNonTodayWrite", _editBlockNonTodayAutoSaveToggle, showDividerBelow: true));
-            cardInner.Children.Add(CreateEditToggleSettingCardRow(EditSettingsGlyph("\uE73E"), "保存非当天数据需确认", "edit.confirmNonTodaySave", _editConfirmNonTodaySaveToggle, showDividerBelow: true));
-            cardInner.Children.Add(CreateEditToggleSettingCardRow(EditSettingsGlyph("\uE72C"), "编辑前是否自动刷新", "edit.refreshBeforeEdit", _editRefreshBeforeEditToggle, showDividerBelow: true));
-            cardInner.Children.Add(CreateEditCompoundTextSettingRow(EditSettingsGlyph("\uE8A5"), "自动保存模式提示文本", "edit.autoSavePromptText", _editAutoSavePromptTextBox, showDividerBelow: true));
-            cardInner.Children.Add(CreateEditCompoundTextSettingRow(EditSettingsGlyph("\uE8A5"), "手动保存模式提示文本", "edit.manualSavePromptText", _editManualSavePromptTextBox, showDividerBelow: false));
-
-            return new Border
-            {
-                Background = (Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"],
-                CornerRadius = new CornerRadius(12),
-                Padding = new Thickness(0, 2, 0, 2),
-                MaxWidth = 920,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Child = cardInner
-            };
-        }
-
-        private static FrameworkElement EditSettingsGlyph(string glyph)
-        {
-            return new FontIcon
-            {
-                Glyph = glyph,
-                FontSize = 18,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
-            };
-        }
-
-        private static Button CreateEditRowMoreButton()
-        {
-            var moreButton = new Button
-            {
-                Padding = new Thickness(4),
-                MinWidth = 36,
-                MinHeight = 36,
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-                BorderThickness = new Thickness(0),
-                CornerRadius = new CornerRadius(8),
-                Content = new FontIcon { Glyph = "\uE712", FontSize = 14, VerticalAlignment = VerticalAlignment.Center }
-            };
-            moreButton.Click += (_, _) => { };
-            return moreButton;
-        }
-
-        private Border CreateEditToggleSettingCardRow(FrameworkElement leadingIcon, string primaryText, string keyText, ToggleSwitch toggle, bool showDividerBelow)
-        {
-            var labelStack = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-            labelStack.Children.Add(new TextBlock { Text = primaryText, FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            labelStack.Children.Add(new TextBlock { Text = keyText, FontSize = 12, Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] });
-
-            var iconHost = new Grid { Width = 32, Height = 32, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-            leadingIcon.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-            leadingIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            iconHost.Children.Add(leadingIcon);
-
-            toggle.VerticalAlignment = VerticalAlignment.Center;
-            toggle.HorizontalAlignment = HorizontalAlignment.Right;
-
-            var moreButton = CreateEditRowMoreButton();
-
-            var rowGrid = new Grid { Padding = new Thickness(16, 12, 16, 12), ColumnSpacing = 16 };
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            Grid.SetColumn(iconHost, 0);
-            Grid.SetColumn(labelStack, 1);
-            Grid.SetColumn(toggle, 2);
-            Grid.SetColumn(moreButton, 3);
-            rowGrid.Children.Add(iconHost);
-            rowGrid.Children.Add(labelStack);
-            rowGrid.Children.Add(toggle);
-            rowGrid.Children.Add(moreButton);
-
-            var outer = new StackPanel { Spacing = 0 };
-            outer.Children.Add(rowGrid);
-            if (showDividerBelow)
-            {
-                outer.Children.Add(new Border
-                {
-                    Height = 1,
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Background = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
-                    Margin = new Thickness(16, 0, 16, 0)
-                });
-            }
-
-            return new Border { Child = outer };
-        }
-
-        private Border CreateEditCompoundTextSettingRow(FrameworkElement leadingIcon, string primaryText, string keyText, TextBox textBox, bool showDividerBelow)
-        {
-            var labelStack = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-            labelStack.Children.Add(new TextBlock { Text = primaryText, FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
-            labelStack.Children.Add(new TextBlock { Text = keyText, FontSize = 12, Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] });
-
-            var iconHost = new Grid { Width = 32, Height = 32, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-            leadingIcon.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-            leadingIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            iconHost.Children.Add(leadingIcon);
-
-            var moreButton = CreateEditRowMoreButton();
-
-            var headerGrid = new Grid { Padding = new Thickness(16, 12, 16, 8), ColumnSpacing = 16 };
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            Grid.SetColumn(iconHost, 0);
-            Grid.SetColumn(labelStack, 1);
-            Grid.SetColumn(moreButton, 2);
-            headerGrid.Children.Add(iconHost);
-            headerGrid.Children.Add(labelStack);
-            headerGrid.Children.Add(moreButton);
-
-            textBox.Margin = new Thickness(16, 0, 16, 12);
-            textBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-
-            var outer = new StackPanel { Spacing = 0 };
-            outer.Children.Add(headerGrid);
-            outer.Children.Add(textBox);
-            if (showDividerBelow)
-            {
-                outer.Children.Add(new Border
-                {
-                    Height = 1,
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Background = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
-                    Margin = new Thickness(16, 0, 16, 0)
-                });
-            }
-
-            return new Border { Child = outer };
+            return SettingsUIHelper.CreateCategoryView(
+                SettingsUIHelper.CreateSettingsGroup("常规",
+                    SettingsUIHelper.CreateSettingRow("自动保存", "编辑作业后是否自动同步到云端。", new FontIcon { Glyph = "\uE74E" }, _editAutoSaveToggle),
+                    SettingsUIHelper.CreateSettingRow("限制非当天写入", "禁止写入非当天作业数据，防止误操作。", new FontIcon { Glyph = "\uE787" }, _editBlockNonTodayAutoSaveToggle),
+                    SettingsUIHelper.CreateSettingRow("保存确认", "保存非当天数据时弹出确认对话框。", new FontIcon { Glyph = "\uE73E" }, _editConfirmNonTodaySaveToggle),
+                    SettingsUIHelper.CreateSettingRow("编辑前刷新", "每次进入编辑模式前先从云端拉取最新数据。", new FontIcon { Glyph = "\uE72C" }, _editRefreshBeforeEditToggle)),
+                SettingsUIHelper.CreateSettingsGroup("提示文案",
+                    SettingsUIHelper.CreateCompoundSettingRow("自动保存提示", "自动保存模式下的底部提示文本。", _editAutoSavePromptTextBox, new FontIcon { Glyph = "\uE8A5" }),
+                    SettingsUIHelper.CreateCompoundSettingRow("手动保存提示", "手动保存模式下的底部提示文本。", _editManualSavePromptTextBox, new FontIcon { Glyph = "\uE8A5" })));
         }
 
         protected override void LoadSettings()
