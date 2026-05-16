@@ -23,15 +23,21 @@ namespace CSD.Settings
         private TextBlock _deviceOwnerTitleText = null!;
         private TextBlock _deviceOwnerSubText = null!;
         private TextBlock _deviceNameText = null!;
+        private TextBlock _deviceUuidText = null!;
         private TextBlock _deviceIdText = null!;
         private TextBlock _deviceCreatedText = null!;
         private TextBlock _deviceUpdatedText = null!;
+        
+        private Border _unboundWarningCard = null!;
+        private Button _bindAccountButton = null!;
+        private string _deviceUuid = "";
         
         private UIElement? _cloudStorageContent;
         private UIElement? _cloudStorageBanner;
         private UIElement? _localStorageBanner;
         private UIElement? _customServerBanner;
         private UIElement? _customServerContent;
+        private UIElement? _manageCard;
 
         private static readonly string[] DataProviderOptions =
         [
@@ -58,6 +64,7 @@ namespace CSD.Settings
             _deviceOwnerTitleText = new TextBlock { Text = "未知管理员", FontSize = 24, FontWeight = Microsoft.UI.Text.FontWeights.Bold, TextWrapping = TextWrapping.Wrap, Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] };
             _deviceOwnerSubText = SettingsUIHelper.CreateSecondaryWrappedText("管理员账号 ID: —\n此设备由贵校或贵单位管理，该管理员系此空间所有者，如有疑问请咨询他，对于恶意绑定、滥用行为请反馈。", 13);
             _deviceNameText = SettingsUIHelper.CreateSecondaryWrappedText("—");
+            _deviceUuidText = SettingsUIHelper.CreateSecondaryWrappedText("—");
             _deviceIdText = SettingsUIHelper.CreateSecondaryWrappedText("—");
             _deviceCreatedText = SettingsUIHelper.CreateSecondaryWrappedText("—");
             _deviceUpdatedText = SettingsUIHelper.CreateSecondaryWrappedText("—");
@@ -111,6 +118,52 @@ namespace CSD.Settings
             return new Border { Background = new SolidColorBrush(bg), CornerRadius = new CornerRadius(10), Padding = new Thickness(14, 12, 14, 12), Child = inner, Visibility = Visibility.Collapsed };
         }
 
+        private Border CreateUnboundWarningCard()
+        {
+            var warningColor = ColorHelper.FromArgb(255, 230, 168, 88);
+            var contentStack = new StackPanel { Spacing = 4 };
+            contentStack.Children.Add(new TextBlock { Text = "当前设备尚未绑定账号,部分功能可能受限。请前往绑定账号以获得完整体验。", FontSize = 13, Foreground = new SolidColorBrush(warningColor), TextWrapping = TextWrapping.Wrap });
+            
+            _bindAccountButton = new Button
+            {
+                Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children =
+                {
+                    new TextBlock { Text = "前往绑定账号" },
+                    new FontIcon { Glyph = "\uE8A7", FontSize = 14 }
+                }},
+                Background = new SolidColorBrush(SettingsUIHelper.WithAlpha(SettingsUIHelper.GetBrushColor("TextFillColorPrimaryBrush", Colors.White), 0)),
+                BorderBrush = new SolidColorBrush(warningColor),
+                BorderThickness = new Thickness(1),
+                Foreground = new SolidColorBrush(warningColor),
+                Padding = new Thickness(16, 8, 16, 8),
+                CornerRadius = new CornerRadius(8),
+                Margin = new Thickness(0, 12, 0, 0)
+            };
+            _bindAccountButton.Click += BindAccountButton_Click;
+
+            contentStack.Children.Add(_bindAccountButton);
+
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+            row.Children.Add(new FontIcon { Glyph = "\uE783", FontSize = 20, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 2, 0, 0), Foreground = new SolidColorBrush(warningColor) });
+
+            var leftContent = new StackPanel { Spacing = 2 };
+            leftContent.Children.Add(new TextBlock { Text = "设备未绑定账号", FontSize = 16, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = new SolidColorBrush(warningColor) });
+            leftContent.Children.Add(contentStack);
+
+            row.Children.Add(leftContent);
+
+            return new Border
+            {
+                Background = new SolidColorBrush(ColorHelper.FromArgb(30, 230, 168, 88)),
+                BorderBrush = new SolidColorBrush(ColorHelper.FromArgb(80, 230, 168, 88)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(16, 14, 16, 14),
+                Child = row,
+                Visibility = Visibility.Collapsed
+            };
+        }
+
         private UIElement BuildCloudContent()
         {
             var stack = new StackPanel { Spacing = 22 };
@@ -125,10 +178,15 @@ namespace CSD.Settings
             accountHeader.Children.Add(new TextBlock { Text = "账号信息", FontSize = 18, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
             stack.Children.Add(accountHeader);
 
+            _unboundWarningCard = CreateUnboundWarningCard();
+            stack.Children.Add(_unboundWarningCard);
+
             var manageCardInner = new StackPanel { Spacing = 8 };
             manageCardInner.Children.Add(_deviceOwnerTitleText);
             manageCardInner.Children.Add(_deviceOwnerSubText);
-            stack.Children.Add(SettingsUIHelper.CreateFilledCard(manageCardInner));
+            _manageCard = SettingsUIHelper.CreateFilledCard(manageCardInner);
+            _manageCard.Visibility = Visibility.Collapsed;
+            stack.Children.Add(_manageCard);
 
             var deviceHeader = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(0, 6, 0, 0) };
             deviceHeader.Children.Add(new Image { Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_device_matebook.ico")), Width = 20, Height = 20, VerticalAlignment = VerticalAlignment.Center });
@@ -137,6 +195,7 @@ namespace CSD.Settings
 
             var techInner = new StackPanel { Spacing = 12 };
             techInner.Children.Add(CreateDeviceIconRow("\uE8EC", _deviceNameText));
+            techInner.Children.Add(CreateDeviceIconRow("\uE811", _deviceUuidText));
             techInner.Children.Add(CreateDeviceIconRow("\uE716", _deviceIdText));
             techInner.Children.Add(CreateDeviceIconRow("\uE787", _deviceCreatedText));
             techInner.Children.Add(CreateDeviceIconRow("\uE72C", _deviceUpdatedText));
@@ -338,6 +397,12 @@ namespace CSD.Settings
             if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("device", out var dev) && dev.ValueKind == JsonValueKind.Object)
                 deviceObj = dev;
 
+            bool hasAccount = true;
+            if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("hasAccount", out var ha))
+            {
+                hasAccount = ha.ValueKind == JsonValueKind.True || (ha.ValueKind == JsonValueKind.String && ha.GetString() == "true");
+            }
+
             static string AsTrimmedString(JsonElement el) => el.ValueKind switch
             {
                 JsonValueKind.String => el.GetString()?.Trim() ?? "",
@@ -374,14 +439,50 @@ namespace CSD.Settings
             var owner = FindString(accountObj, "ownerName", "owner_name", "adminName", "admin_name", "owner", "displayName", "nickname", "name");
             var adminId = FindString(accountObj, "adminId", "admin_id", "ownerId", "owner_id", "appId", "app_id", "id");
             var deviceName = FindString(deviceObj, "deviceName", "device_name", "name", "label", "namespace");
+            var deviceUuid = FindString(deviceObj, "uuid", "deviceUuid", "device_uuid");
             var deviceId = FindString(deviceObj, "deviceId", "device_id", "id", "deviceType", "device_type");
             var created = FindString(deviceObj, "createdAt", "created_at", "createTime", "created", "installedAt", "installed_at");
             var updated = FindString(deviceObj, "updatedAt", "updated_at", "updateTime", "updated");
 
+            _unboundWarningCard.Visibility = hasAccount ? Visibility.Collapsed : Visibility.Visible;
+
             _deviceOwnerTitleText.Text = string.IsNullOrEmpty(owner) ? "未知管理员" : owner;
             _deviceOwnerSubText.Text = $"此设备由贵校管理 管理员账号 ID: {(string.IsNullOrEmpty(adminId) ? "—" : adminId)}\n此设备由贵校或贵单位管理，该管理员系此空间所有者，如有疑问请咨询他，对于恶意绑定、滥用行为请反馈。";
 
+            if (_manageCard != null) _manageCard.Visibility = hasAccount ? Visibility.Visible : Visibility.Collapsed;
+
             _deviceNameText.Text = $"设备名称: {(string.IsNullOrEmpty(deviceName) ? "—" : deviceName)}";
+            
+            // 如果后端接口没有返回 uuid，可以尝试从本地设置读取
+            if (string.IsNullOrEmpty(deviceUuid))
+            {
+                deviceUuid = AppSettings.Values["Settings_DeviceUuid"] as string;
+            }
+            
+            if (!string.IsNullOrEmpty(deviceUuid))
+            {
+                _deviceUuid = deviceUuid;
+                _deviceUuidText.Text = $"设备 UUID: {deviceUuid}";
+                _deviceUuidText.Visibility = Visibility.Visible;
+                
+                // 确保包含此图标的 Row 可见
+                if (_deviceUuidText.Parent is StackPanel parentPanel)
+                {
+                    parentPanel.Visibility = Visibility.Visible;
+                }
+            }
+            else
+            {
+                _deviceUuid = "";
+                _deviceUuidText.Visibility = Visibility.Collapsed;
+                
+                // 隐藏包含此图标的整个 Row
+                if (_deviceUuidText.Parent is StackPanel parentPanel)
+                {
+                    parentPanel.Visibility = Visibility.Collapsed;
+                }
+            }
+
             _deviceIdText.Text = $"设备 ID: {(string.IsNullOrEmpty(deviceId) ? "—" : deviceId)}";
             _deviceCreatedText.Text = $"创建时间: {FormatDeviceTime(created)}";
             _deviceUpdatedText.Text = $"更新时间: {FormatDeviceTime(updated)}";
@@ -406,6 +507,22 @@ namespace CSD.Settings
             if (!string.IsNullOrEmpty(exePath))
                 System.Diagnostics.Process.Start(exePath);
             Application.Current.Exit();
+        }
+
+        private void BindAccountButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var baseUrl = _serverUrlBox.Text.TrimEnd('/');
+                if (string.IsNullOrEmpty(baseUrl) || baseUrl == "https://kv-service.wuyuan.dev")
+                {
+                    baseUrl = "https://kv.houlang.cloud";
+                }
+                
+                var url = $"{baseUrl}/?uuid={System.Net.WebUtility.UrlEncode(_deviceUuid)}&tolinktoaccount=true";
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = url, UseShellExecute = true });
+            }
+            catch { }
         }
 
         private async Task ShowSimpleDialogAsync(string message)

@@ -54,43 +54,431 @@
             x:Name="ContentHost"
             Grid.Row="1"
             Padding="32">
-            <StackPanel
-                x:Name="FormPanel"
-                Width="360"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="16">
-                <StackPanel.ChildrenTransitions>
-                    <TransitionCollection>
-                        <EntranceThemeTransition IsStaggeringEnabled="True" />
-                        <RepositionThemeTransition />
-                    </TransitionCollection>
-                </StackPanel.ChildrenTransitions>
-                <TextBlock
+            <ScrollViewer
+                x:Name="FormScrollViewer"
+                Visibility="Collapsed"
+                HorizontalScrollBarVisibility="Disabled"
+                HorizontalScrollMode="Disabled"
+                VerticalScrollBarVisibility="Auto"
+                VerticalScrollMode="Auto"
+                ZoomMode="Disabled">
+                <StackPanel
+                    x:Name="FormPanel"
+                    Width="480"
                     HorizontalAlignment="Center"
-                    FontSize="24"
-                    FontWeight="SemiBold"
-                    Text="初始化" />
-                <TextBlock
-                    HorizontalAlignment="Center"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="请输入 KV授权令牌 以继续" />
-                <PasswordBox
-                    x:Name="TokenBox"
-                    Header="KV授权令牌"
-                    PlaceholderText="输入 令牌" />
-                <Button
-                    HorizontalAlignment="Stretch"
-                    Tag="DisableHoverAnimation"
-                    Click="ContinueButton_Click"
-                    Content="继续" />
-                <Button
-                    x:Name="TutorialButton"
-                    HorizontalAlignment="Stretch"
-                    Tag="DisableHoverAnimation"
-                    Click="TutorialButton_Click"
-                    Content="教程" />
+                    Spacing="16">
+                    <TextBlock
+                        x:Name="WelcomeText"
+                        HorizontalAlignment="Center"
+                        FontSize="24"
+                        FontWeight="SemiBold"
+                        Text="欢迎使用 Classworks" />
+                    <TextBlock
+                        x:Name="InstructionText"
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="请选择你的使用方式" />
+
+                <StackPanel x:Name="OptionsPanel" Spacing="12" Margin="0,8,0,0">
+                    <Button
+                        x:Name="FirstUseCard"
+                        HorizontalContentAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Click="FirstUseCard_Tapped">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Width="40"
+                                Height="40"
+                                CornerRadius="6"
+                                Background="#0078D4"
+                                VerticalAlignment="Center"
+                                Margin="0,0,16,0">
+                                <TextBlock
+                                    Text="NEW"
+                                    Foreground="White"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Left">
+                                <TextBlock
+                                    Text="初次使用"
+                                    FontSize="18"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Text="了解 Classworks KV 并开始使用"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    FontSize="13" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <Button
+                        x:Name="RegisteredCard"
+                        HorizontalContentAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        Background="#1A2E1A"
+                        BorderBrush="#2D5A2D"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Click="RegisteredCard_Tapped">
+                        <Button.Resources>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#223D22" />
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#152615" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#3C783C" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#2D5A2D" />
+                        </Button.Resources>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Width="40"
+                                Height="40"
+                                CornerRadius="20"
+                                VerticalAlignment="Center"
+                                Margin="0,0,16,0">
+                                <FontIcon
+                                    Glyph="&#xE73E;"
+                                    FontSize="20"
+                                    Foreground="#4CAF50" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Left">
+                                <TextBlock
+                                    Text="已注册"
+                                    FontSize="18"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Text="使用设备 Namespace 登录"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    FontSize="13" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <Button
+                        x:Name="KvCard"
+                        HorizontalContentAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Click="KvCard_Tapped">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Width="40"
+                                Height="40"
+                                CornerRadius="20"
+                                VerticalAlignment="Center"
+                                Margin="0,0,16,0">
+                                <FontIcon
+                                    Glyph="&#xE705;"
+                                    FontSize="20"
+                                    Foreground="#0078D4" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Left">
+                                <TextBlock
+                                    Text="Classworks KV"
+                                    FontSize="18"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Text="打开云端控制台管理数据"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    FontSize="13" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <Button
+                        x:Name="InputTokenCard"
+                        HorizontalContentAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Click="InputTokenCard_Tapped">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Width="40"
+                                Height="40"
+                                CornerRadius="20"
+                                VerticalAlignment="Center"
+                                Margin="0,0,16,0">
+                                <FontIcon
+                                    Glyph="&#xEB41;"
+                                    FontSize="20"
+                                    Foreground="#0078D4" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Left">
+                                <TextBlock
+                                    Text="输入 Token"
+                                    FontSize="18"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Text="使用已有 KV 授权令牌登录"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    FontSize="13" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <Button
+                        x:Name="LocalModeCard"
+                        HorizontalContentAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20"
+                        Click="LocalModeCard_Tapped">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Width="40"
+                                Height="40"
+                                CornerRadius="20"
+                                VerticalAlignment="Center"
+                                Margin="0,0,16,0">
+                                <FontIcon
+                                    Glyph="&#xE8B7;"
+                                    FontSize="20"
+                                    Foreground="#4CAF50" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Left">
+                                <TextBlock
+                                    Text="本地模式"
+                                    FontSize="18"
+                                    FontWeight="SemiBold" />
+                                <TextBlock
+                                    Text="数据仅保存在本机，不支持多设备同步"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    FontSize="13" />
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="CloudChoicePanel"
+                    Visibility="Collapsed"
+                    Spacing="16">
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        FontSize="24"
+                        FontWeight="SemiBold"
+                        TextWrapping="Wrap"
+                        Text="你需要在多个设备上查看作业吗？" />
+                    <Border
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="16">
+                        <TextBlock
+                            Foreground="#00BFFF"
+                            Text="比如：在家里电脑、手机上查看，或者多个教室设备共享数据"
+                            TextWrapping="Wrap" />
+                    </Border>
+
+                    <Button
+                        x:Name="CloudSyncButton"
+                        HorizontalContentAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        Background="#0078D4"
+                        BorderBrush="Transparent"
+                        CornerRadius="8"
+                        Padding="20"
+                        Click="CloudSyncButton_Click">
+                        <Button.Resources>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1A85D9" />
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#006CBE" />
+                        </Button.Resources>
+                        <StackPanel Spacing="4">
+                            <Image
+                                x:Name="CloudSyncIcon"
+                                Width="36"
+                                Height="36"
+                                HorizontalAlignment="Center" />
+                            <TextBlock
+                                Text="需要，使用云同步"
+                                FontSize="20"
+                                FontWeight="SemiBold"
+                                Foreground="White"
+                                HorizontalAlignment="Center" />
+                            <TextBlock
+                                Text="多设备访问"
+                                FontSize="14"
+                                Foreground="#CCE5FF"
+                                HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button
+                        x:Name="LocalOnlyButton"
+                        HorizontalContentAlignment="Stretch"
+                        HorizontalAlignment="Stretch"
+                        Background="Transparent"
+                        BorderBrush="{ThemeResource TextFillColorSecondaryBrush}"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Padding="20"
+                        Click="LocalOnlyButton_Click">
+                        <Button.Resources>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="{ThemeResource TextFillColorPrimaryBrush}" />
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="{ThemeResource TextFillColorPrimaryBrush}" />
+                        </Button.Resources>
+                        <StackPanel Spacing="4">
+                            <Image
+                                x:Name="LocalOnlyIcon"
+                                Width="36"
+                                Height="36"
+                                HorizontalAlignment="Center" />
+                            <TextBlock
+                                Text="不需要，只用这台设备"
+                                FontSize="20"
+                                FontWeight="SemiBold"
+                                Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                HorizontalAlignment="Center" />
+                            <TextBlock
+                                Text="本地存储"
+                                FontSize="14"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button
+                        HorizontalAlignment="Left"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Click="BackToOptions_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE973;" FontSize="16" />
+                            <TextBlock Text="上一步" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="TokenInputPanel"
+                    Visibility="Collapsed"
+                    Spacing="16">
+                    <TextBlock
+                        x:Name="TokenInputTitle"
+                        HorizontalAlignment="Center"
+                        FontSize="20"
+                        FontWeight="SemiBold" />
+                    <TextBlock
+                        x:Name="TokenInputSubtitle"
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap" />
+                    <PasswordBox
+                        x:Name="TokenBox"
+                        Header="KV授权令牌"
+                        PlaceholderText="输入 令牌" />
+                    <Button
+                        x:Name="AutoRegisterButton"
+                        HorizontalAlignment="Stretch"
+                        Tag="DisableHoverAnimation"
+                        Click="AutoRegisterButton_Click"
+                        Content="自动注册设备"
+                        Background="#0078D4"
+                        Foreground="White"
+                        Visibility="Collapsed" />
+                    <Button
+                        x:Name="TokenSubmitButton"
+                        HorizontalAlignment="Stretch"
+                        Tag="DisableHoverAnimation"
+                        Click="ContinueButton_Click"
+                        Content="继续" />
+                    <Button
+                        x:Name="TutorialButton"
+                        HorizontalAlignment="Stretch"
+                        Tag="DisableHoverAnimation"
+                        Click="TutorialButton_Click"
+                        Content="教程" />
+                    <Button
+                        HorizontalAlignment="Center"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Click="BackToOptions_Click"
+                        Content="← 返回" />
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="DeviceAuthPanel"
+                    Visibility="Collapsed"
+                    Spacing="16">
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        FontSize="20"
+                        FontWeight="SemiBold"
+                        Text="设备认证" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Text="输入你在 Classworks KV 获取的认证信息" />
+                    
+                    <TextBox
+                        x:Name="NamespaceBox"
+                        Header="命名空间 (Namespace)"
+                        PlaceholderText="输入 Namespace (必填)" />
+                    <PasswordBox
+                        x:Name="AuthPasswordBox"
+                        Header="认证码 (Password)"
+                        PlaceholderText="输入认证码 (选填)" />
+                        
+                    <TextBlock
+                        x:Name="AuthErrorText"
+                        Foreground="Red"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                        
+                    <Button
+                        x:Name="AuthSubmitButton"
+                        HorizontalAlignment="Stretch"
+                        Click="AuthSubmitButton_Click"
+                        Content="认证并登录"
+                        Background="#0078D4"
+                        Foreground="White" />
+                    <Button
+                        HorizontalAlignment="Center"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Click="BackToOptions_Click"
+                        Content="← 返回" />
+                </StackPanel>
             </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>

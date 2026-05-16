@@ -8,6 +8,9 @@ using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Net.Http;
+using System.Text.Json;
+using System.Text;
 using System.Threading.Tasks;
 using Windows.Graphics;
 using Windows.UI;
@@ -43,12 +46,15 @@ namespace CSD
 
         private bool _hasPlayedInitializationAnimation;
         private bool _isTransitioningToForm;
+        private bool _hasAppliedOobeInteractions;
+        private bool _hasShownOptionsHeader;
 
         public InitializationWindow()
         {
             InitializeComponent();
             BuildAnimationVisuals();
             ConfigureIntegratedTitleBar();
+            SetChoiceIcons();
 
             try
             {
@@ -67,6 +73,12 @@ namespace CSD
             {
                 rootContent.Loaded += RootContent_Loaded;
             }
+        }
+
+        private void SetChoiceIcons()
+        {
+            CloudSyncIcon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_gallery_cloud_synchronization.ico"));
+            LocalOnlyIcon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(AppSettings.GetAssetUri("icons/ic_device_matebook.ico"));
         }
 
         private void ConfigureIntegratedTitleBar()
@@ -99,8 +111,11 @@ namespace CSD
 
         private void BuildAnimationVisuals()
         {
+            FormScrollViewer.Visibility = Visibility.Collapsed;
             FormPanel.Opacity = 0;
             FormPanel.IsHitTestVisible = false;
+            FormScrollViewer.IsHitTestVisible = false;
+            FormPanel.RenderTransform = new TranslateTransform { Y = 20 };
 
             _animationStage = new Grid
             {
@@ -306,6 +321,15 @@ namespace CSD
 
         private void ResetIntroVisualState()
         {
+            if (FormPanel != null)
+            {
+                FormPanel.Opacity = 0;
+                if (FormPanel.RenderTransform is TranslateTransform formTransform)
+                {
+                    formTransform.Y = 20;
+                }
+            }
+
             if (_introOverlay?.RenderTransform is ScaleTransform overlayScale)
             {
                 overlayScale.ScaleX = 1.25;
@@ -514,15 +538,151 @@ namespace CSD
                 _animationStage.IsHitTestVisible = false;
             }
 
-            FormPanel.Opacity = 1;
+            TitleStatusText.Text = "欢迎使用 Classworks";
+            FormScrollViewer.Visibility = Visibility.Visible;
             FormPanel.IsHitTestVisible = true;
-            TitleStatusText.Text = "初始化";
+            FormScrollViewer.IsHitTestVisible = true;
 
-            AnimationHelper.AnimateEntrance(FormPanel, fromY: 150f, durationMs: 360);
-            AnimationHelper.ApplyStandardInteractions(FormPanel);
+            if (!_hasAppliedOobeInteractions)
+            {
+                AnimationHelper.ApplyStandardInteractions(FormPanel);
+                _hasAppliedOobeInteractions = true;
+            }
 
-            await Task.Delay(380);
+            StartDoubleAnimation(FormPanel, nameof(UIElement.Opacity), 0, 1, 400, 0, new ExponentialEase { Exponent = 4, EasingMode = EasingMode.EaseOut });
+            if (FormPanel.RenderTransform is TranslateTransform transform)
+            {
+                StartDoubleAnimation(transform, nameof(TranslateTransform.Y), 20, 0, 400, 0, new ExponentialEase { Exponent = 4, EasingMode = EasingMode.EaseOut });
+            }
+
+            ShowOptionsPanel(animate: true);
+        }
+
+        private void HideAllOobePanels()
+        {
+            OptionsPanel.Visibility = Visibility.Collapsed;
+            CloudChoicePanel.Visibility = Visibility.Collapsed;
+            TokenInputPanel.Visibility = Visibility.Collapsed;
+            DeviceAuthPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void ResetOobeViewport()
+        {
+            FormScrollViewer.ChangeView(null, 0, null, true);
+        }
+
+        private void AnimateOobePanel(Panel panel, bool includeHeader = false)
+        {
+            double delay = 0;
+
+            if (includeHeader && WelcomeText.Visibility == Visibility.Visible)
+            {
+                AnimationHelper.AnimateEntrance(WelcomeText, fromY: 12f, durationMs: 260, delayMs: delay);
+                delay += 35;
+            }
+
+            if (includeHeader && InstructionText.Visibility == Visibility.Visible)
+            {
+                AnimationHelper.AnimateEntrance(InstructionText, fromY: 12f, durationMs: 260, delayMs: delay);
+                delay += 35;
+            }
+
+            AnimationHelper.AnimateEntrance(panel, fromY: 18f, durationMs: 300, delayMs: delay);
+        }
+
+        private void FadeInPanelForReturn(Panel panel)
+        {
+            var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(panel);
+            visual.Opacity = 0;
+
+            var compositor = visual.Compositor;
+            var easing = compositor.CreateCubicBezierEasingFunction(new Vector2(0.16f, 1f), new Vector2(0.3f, 1f));
+
+            var animation = compositor.CreateScalarKeyFrameAnimation();
+            animation.InsertKeyFrame(0f, 0f);
+            animation.InsertKeyFrame(1f, 1f, easing);
+            animation.Duration = TimeSpan.FromMilliseconds(280);
+            animation.Target = "Opacity";
+
+            visual.StartAnimation("Opacity", animation);
+        }
+
+        private void ShowOptionsPanel(bool animate)
+        {
+            ResetOobeViewport();
+            WelcomeText.Visibility = Visibility.Visible;
+            InstructionText.Visibility = Visibility.Visible;
+            HideAllOobePanels();
+            OptionsPanel.Visibility = Visibility.Visible;
+
+            if (animate)
+            {
+                if (_hasShownOptionsHeader)
+                {
+                    FadeInPanelForReturn(OptionsPanel);
+                }
+                else
+                {
+                    AnimateOobePanel(OptionsPanel, includeHeader: true);
+                    _hasShownOptionsHeader = true;
+                }
+            }
+        }
+
+        private void ShowCloudChoicePanel(bool animate = true)
+        {
+            ResetOobeViewport();
+            WelcomeText.Visibility = Visibility.Collapsed;
+            InstructionText.Visibility = Visibility.Collapsed;
+            HideAllOobePanels();
+            CloudChoicePanel.Visibility = Visibility.Visible;
+
+            if (animate)
+            {
+                AnimateOobePanel(CloudChoicePanel);
+            }
+        }
+
+        private void ShowTokenInputPanel(string title, string subtitle, bool animate = true)
+        {
+            ResetOobeViewport();
+            WelcomeText.Visibility = Visibility.Collapsed;
+            InstructionText.Visibility = Visibility.Collapsed;
+            HideAllOobePanels();
+            TokenInputPanel.Visibility = Visibility.Visible;
+            AutoRegisterButton.Visibility = Visibility.Collapsed;
+
+            if (TokenInputTitle != null) TokenInputTitle.Text = title;
+            if (TokenInputSubtitle != null) TokenInputSubtitle.Text = subtitle;
+
+            TokenBox.Password = string.Empty;
+
+            if (animate)
+            {
+                AnimateOobePanel(TokenInputPanel);
+            }
+
             TokenBox.Focus(FocusState.Programmatic);
+        }
+
+        private void ShowDeviceAuthPanel(bool animate = true)
+        {
+            ResetOobeViewport();
+            WelcomeText.Visibility = Visibility.Collapsed;
+            InstructionText.Visibility = Visibility.Collapsed;
+            HideAllOobePanels();
+
+            DeviceAuthPanel.Visibility = Visibility.Visible;
+            NamespaceBox.Text = string.Empty;
+            AuthPasswordBox.Password = string.Empty;
+            AuthErrorText.Visibility = Visibility.Collapsed;
+            AuthSubmitButton.IsEnabled = true;
+            AuthSubmitButton.Content = "认证并登录";
+
+            if (animate)
+            {
+                AnimateOobePanel(DeviceAuthPanel);
+            }
         }
 
         private async Task FadeVisualOpacityAsync(UIElement element, float from, float to, double durationMs)
@@ -648,6 +808,221 @@ namespace CSD
                 System.Diagnostics.Process.Start(psi);
             }
             catch { }
+        }
+
+        private void FirstUseCard_Tapped(object sender, RoutedEventArgs e)
+        {
+            ShowCloudChoicePanel();
+        }
+
+        private void RegisteredCard_Tapped(object sender, RoutedEventArgs e)
+        {
+            ShowDeviceAuthPanel();
+        }
+
+        private void KvCard_Tapped(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://kv.houlang.cloud",
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch { }
+        }
+
+        private void InputTokenCard_Tapped(object sender, RoutedEventArgs e)
+        {
+            ShowTokenInputPanel("输入 Token", "使用已有 KV 授权令牌登录");
+        }
+
+        private void LocalModeCard_Tapped(object sender, RoutedEventArgs e)
+        {
+            AppSettings.Values["Settings_DataProvider"] = "本地存储";
+            var mainWindow = new MainWindow();
+            mainWindow.Activate();
+            Close();
+        }
+
+        private void CloudSyncButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowTokenInputPanel("云同步", "点击自动注册设备，或输入已有 KV 授权令牌");
+            AutoRegisterButton.Visibility = Visibility.Visible;
+        }
+
+        private async void AutoRegisterButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                AutoRegisterButton.IsEnabled = false;
+                AutoRegisterButton.Content = "正在注册...";
+
+                string uuid = Guid.NewGuid().ToString();
+                string deviceName = $"CSD-{Environment.MachineName}";
+                string serverUrl = AppSettings.Values["Settings_ServerUrl"] as string ?? "https://kv-service.wuyuan.dev";
+                serverUrl = serverUrl.TrimEnd('/');
+
+                using var httpClient = new HttpClient();
+                
+                // 1. Register device
+                var devicePayload = new { uuid, deviceName };
+                var deviceContent = new StringContent(JsonSerializer.Serialize(devicePayload), Encoding.UTF8, "application/json");
+                await httpClient.PostAsync($"{serverUrl}/devices", deviceContent);
+
+                // 2. Get token
+                var tokenPayload = new { @namespace = uuid, password = "", appId = "d158067f53627d2b98babe8bffd2fd7d" };
+                var tokenContent = new StringContent(JsonSerializer.Serialize(tokenPayload), Encoding.UTF8, "application/json");
+                var response = await httpClient.PostAsync($"{serverUrl}/apps/auth/token", tokenContent);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    using var doc = JsonDocument.Parse(responseString);
+                    if (doc.RootElement.TryGetProperty("token", out var tokenElement))
+                    {
+                        string token = tokenElement.GetString() ?? "";
+                        AppSettings.Values[TokenSettingsKey] = token;
+                        AppSettings.Values["Settings_DataProvider"] = "Classworks 云端存储";
+
+                        var mainWindow = new MainWindow();
+                        mainWindow.Activate();
+                        Close();
+                        return;
+                    }
+                }
+
+                // If failed to get token, reset button
+                AutoRegisterButton.IsEnabled = true;
+                AutoRegisterButton.Content = "注册失败，请重试";
+            }
+            catch
+            {
+                AutoRegisterButton.IsEnabled = true;
+                AutoRegisterButton.Content = "网络错误，请重试";
+            }
+        }
+
+        private void LocalOnlyButton_Click(object sender, RoutedEventArgs e)
+        {
+            AppSettings.Values["Settings_DataProvider"] = "本地存储";
+            var mainWindow = new MainWindow();
+            mainWindow.Activate();
+            Close();
+        }
+
+        private void BackToOptions_Click(object sender, RoutedEventArgs e)
+        {
+            ShowOptionsPanel(animate: true);
+        }
+
+        private async void AuthSubmitButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(NamespaceBox.Text))
+            {
+                AuthErrorText.Text = "请输入命名空间";
+                AuthErrorText.Visibility = Visibility.Visible;
+                return;
+            }
+
+            try
+            {
+                AuthSubmitButton.IsEnabled = false;
+                AuthSubmitButton.Content = "正在认证...";
+                AuthErrorText.Visibility = Visibility.Collapsed;
+
+                string serverUrl = AppSettings.Values["Settings_ServerUrl"] as string ?? "https://kv-service.wuyuan.dev";
+                serverUrl = serverUrl.TrimEnd('/');
+
+                using var httpClient = new HttpClient();
+                
+                string ns = NamespaceBox.Text.Trim();
+                string pwd = AuthPasswordBox.Password;
+
+                var tokenPayload = new Dictionary<string, string>
+                {
+                    { "namespace", ns },
+                    { "appId", "d158067f53627d2b98babe8bffd2fd7d" }
+                };
+                
+                if (!string.IsNullOrEmpty(pwd))
+                {
+                    tokenPayload["password"] = pwd;
+                }
+
+                var tokenContent = new StringContent(JsonSerializer.Serialize(tokenPayload), Encoding.UTF8, "application/json");
+                var response = await httpClient.PostAsync($"{serverUrl}/apps/auth/token", tokenContent);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    using var doc = JsonDocument.Parse(responseString);
+                    if (doc.RootElement.TryGetProperty("success", out var successElement) && successElement.GetBoolean() == true)
+                    {
+                        if (doc.RootElement.TryGetProperty("token", out var tokenElement))
+                        {
+                            string token = tokenElement.GetString() ?? "";
+                            AppSettings.Values[TokenSettingsKey] = token;
+                            AppSettings.Values["Settings_DataProvider"] = "Classworks 云端存储";
+
+                            if (doc.RootElement.TryGetProperty("device", out var deviceElement) && deviceElement.TryGetProperty("uuid", out var uuidElement))
+                            {
+                                AppSettings.Values["Settings_DeviceUuid"] = uuidElement.GetString() ?? "";
+                            }
+
+                            var mainWindow = new MainWindow();
+                            mainWindow.Activate();
+                            Close();
+                            return;
+                        }
+                    }
+                    AuthErrorText.Text = "认证失败，请检查 Namespace 和 Password";
+                }
+                else
+                {
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        AuthErrorText.Text = "密码错误或无权限访问";
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        AuthErrorText.Text = "设备不存在，请检查 namespace 是否正确";
+                    }
+                    else
+                    {
+                        try
+                        {
+                            using var errorDoc = JsonDocument.Parse(responseString);
+                            if (errorDoc.RootElement.TryGetProperty("error", out var errorObj) && errorObj.TryGetProperty("message", out var msgObj))
+                            {
+                                AuthErrorText.Text = msgObj.GetString() ?? "认证失败，请稍后重试";
+                            }
+                            else
+                            {
+                                AuthErrorText.Text = "认证失败，请稍后重试";
+                            }
+                        }
+                        catch
+                        {
+                            AuthErrorText.Text = $"认证失败，HTTP 状态码: {(int)response.StatusCode}";
+                        }
+                    }
+                }
+                
+                AuthErrorText.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                AuthErrorText.Text = $"网络错误或认证失败: {ex.Message}";
+                AuthErrorText.Visibility = Visibility.Visible;
+            }
+            finally
+            {
+                AuthSubmitButton.IsEnabled = true;
+                AuthSubmitButton.Content = "认证并登录";
+            }
         }
     }
 }

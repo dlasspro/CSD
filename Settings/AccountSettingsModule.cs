@@ -16,6 +16,7 @@ namespace CSD.Settings
         public override string Glyph => "\uE716";
 
         private TextBlock _currentTokenText = null!;
+        private PasswordBox _tokenInputBox = null!;
 
         protected override FrameworkElement BuildContent()
         {
@@ -31,6 +32,19 @@ namespace CSD.Settings
             var destroyTokenButton = new Button { Content = "销毁 Token", Margin = new Thickness(0, 4, 0, 0) };
             destroyTokenButton.Click += DestroyTokenButton_Click;
             tokenSection.Children.Add(destroyTokenButton);
+
+            var inputTokenSection = new StackPanel { Spacing = 8 };
+            _tokenInputBox = new PasswordBox
+            {
+                Header = "输入 Token",
+                PlaceholderText = "输入 KV 授权令牌",
+                Width = 320
+            };
+            inputTokenSection.Children.Add(_tokenInputBox);
+
+            var applyTokenButton = new Button { Content = "应用 Token", Width = 120 };
+            applyTokenButton.Click += ApplyTokenButton_Click;
+            inputTokenSection.Children.Add(applyTokenButton);
 
             var exportButton = new Button { Content = "导出设置", HorizontalAlignment = HorizontalAlignment.Stretch };
             exportButton.Click += ExportButton_Click;
@@ -55,6 +69,7 @@ namespace CSD.Settings
 
             return SettingsUIHelper.CreateCategoryView(
                 SettingsUIHelper.CreateSettingRow("当前 Token 状态", "查看授权状态并可重置。", tokenSection),
+                SettingsUIHelper.CreateSettingRow("输入 Token", "在此输入新的 KV 授权令牌。", inputTokenSection),
                 SettingsUIHelper.CreateSettingRow("数据管理", "导入、导出本地设置，或前往网页端。", ioStack));
         }
 
@@ -84,6 +99,33 @@ namespace CSD.Settings
             if (!string.IsNullOrEmpty(exePath))
                 System.Diagnostics.Process.Start(exePath);
             Application.Current.Exit();
+        }
+
+        private async void ApplyTokenButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_tokenInputBox.Password))
+                return;
+
+            AppSettings.Values["Token"] = _tokenInputBox.Password;
+            _currentTokenText.Text = "已设置";
+            _tokenInputBox.Password = string.Empty;
+
+            var dialog = new ContentDialog
+            {
+                Title = "Token 已更新",
+                Content = "Token 已成功保存。是否重新启动应用？",
+                PrimaryButtonText = "重新启动",
+                CloseButtonText = "稍后",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = Context.Window.Content.XamlRoot
+            };
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                var exePath = Environment.ProcessPath;
+                if (!string.IsNullOrEmpty(exePath))
+                    System.Diagnostics.Process.Start(exePath);
+                Application.Current.Exit();
+            }
         }
 
         private async void ExportButton_Click(object sender, RoutedEventArgs e)

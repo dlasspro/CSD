@@ -246,6 +246,14 @@ namespace CSD
             // 解析初始文本为多行
             var lines = ParseLines(initialText);
             
+            // 检查是否为本地模式
+            string dataProvider = AppSettings.Values["Settings_DataProvider"] as string ?? "";
+            bool isLocalMode = dataProvider == "本地存储";
+            if (isLocalMode)
+            {
+                title += " (本地模式)";
+            }
+
             // 输入框容器
             var linesPanel = new StackPanel { Spacing = 8 };
             var inputBoxes = new List<TextBox>();
@@ -893,6 +901,19 @@ namespace CSD
             _isUpdatingCalendarSelection = false;
         }
 
+        private void UpdateStatus(string message)
+        {
+            string dataProvider = AppSettings.Values["Settings_DataProvider"] as string ?? "";
+            if (dataProvider == "本地存储")
+            {
+                StatusText.Text = message + " (本地模式)";
+            }
+            else
+            {
+                StatusText.Text = message;
+            }
+        }
+
         private async Task LoadHomeworkAsync(DateTime date)
         {
             // 增加版本号并记录当前版本
@@ -904,9 +925,9 @@ namespace CSD
             var dateKey = $"classworks-data-{date:yyyyMMdd}";
 
             bool isToday = date.Date == DateTime.Now.Date;
-            StatusText.Text = isToday
+            UpdateStatus(isToday
                 ? "正在加载今日作业..."
-                : $"正在加载 {date:yyyy-MM-dd} 的作业...";
+                : $"正在加载 {date:yyyy-MM-dd} 的作业...");
             HomeworkContainer.Children.Clear();
 
             var responseBody = await SendKvRequestAsync(HttpMethod.Get, $"/kv/{Uri.EscapeDataString(dateKey)}");
@@ -933,10 +954,18 @@ namespace CSD
 
         private async Task<string?> SendKvRequestAsync(HttpMethod method, string path, string? jsonBody = null, CancellationToken cancellationToken = default)
         {
+            var dataProvider = AppSettings.Values["Settings_DataProvider"] as string;
+            if (dataProvider == "本地存储")
+            {
+                // 如果是本地存储模式，直接返回空或本地数据
+                // 因为目前还没完全实现本地 KV 存储引擎，暂时返回空来触发“未布置作业”的逻辑
+                return null;
+            }
+
             var token = AppSettings.Values[TokenSettingsKey] as string;
             if (string.IsNullOrWhiteSpace(token))
             {
-                StatusText.Text = "本地没有 Token，请先完成初始化。";
+                UpdateStatus("本地没有 Token，请先完成初始化。");
                 return null;
             }
 
@@ -958,17 +987,21 @@ namespace CSD
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound && path.StartsWith("/kv/classworks-data-", StringComparison.OrdinalIgnoreCase))
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                     {
-                        StatusText.Text = "当天没有作业，请点击按钮布置";
+                        if (path.StartsWith("/kv/classworks-data-", StringComparison.OrdinalIgnoreCase))
+                        {
+                            UpdateStatus("当天没有布置作业，请点击按钮布置");
+                        }
+                        // 对于其他的 404（例如科目配置或名单配置尚未创建），静默返回，不覆盖主界面的状态提示
                     }
                     else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                     {
-                        StatusText.Text = "token配置错误，请去设置销毁重设";
+                        UpdateStatus("token配置错误，请去设置销毁重设");
                     }
                     else
                     {
-                        StatusText.Text = $"请求失败 ({(int)response.StatusCode})";
+                        UpdateStatus($"请求失败 ({(int)response.StatusCode})");
                     }
                     return null;
                 }
@@ -977,7 +1010,7 @@ namespace CSD
             }
             catch (Exception ex)
             {
-                StatusText.Text = "网络请求失败。";
+                UpdateStatus("网络请求失败。");
 
                 // 调试日志（记录错误）
                 LogToDebugWindow(method.Method, path, 0, "", ex.Message);
@@ -1010,7 +1043,7 @@ namespace CSD
                 using var document = JsonDocument.Parse(json);
                 if (!document.RootElement.TryGetProperty("homework", out var homework) || homework.ValueKind != JsonValueKind.Object)
                 {
-                    StatusText.Text = "暂无作业。";
+                    UpdateStatus("当天没有布置作业，请点击按钮布置");
                     HomeworkContainer.Children.Clear();
                     return;
                 }
@@ -1034,7 +1067,7 @@ namespace CSD
                 }
 
                 HomeworkContainer.Children.Clear();
-                StatusText.Text = items.Count == 0 ? "暂无作业。" : $"共 {items.Count} 项作业";
+                UpdateStatus(items.Count == 0 ? "当天没有布置作业，请点击按钮布置" : $"共 {items.Count} 项作业");
 
                 // 更新轮播数据，退出轮播模式
                 _carouselItems = items;
@@ -1358,7 +1391,7 @@ namespace CSD
             }
             catch (Exception)
             {
-                StatusText.Text = "保存作业失败。";
+                UpdateStatus("保存作业失败。");
             }
         }
 
@@ -1372,7 +1405,7 @@ namespace CSD
 
                     {
 
-                        StatusText.Text = "暂无作业可供轮播。";
+                        UpdateStatus("当天没有布置作业，请点击按钮布置");
 
                         return;
 
