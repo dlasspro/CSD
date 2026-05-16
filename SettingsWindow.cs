@@ -153,14 +153,14 @@ namespace CSD
             // --- 卡片大小 ---
             _minCardWidthBox = CreateNumberBoxWithoutHeader(100, 800, 10, 220);
             _minCardWidthBox.Value = (double)(settings[MinCardWidthKey] ?? 220.0);
-            _cardGapBox = CreateNumberBoxWithoutHeader(0, 60, 2, 14);
-            _cardGapBox.Value = (double)(settings[CardGapKey] ?? 14.0);
+            _cardGapBox = CreateNumberBoxWithoutHeader(0, 60, 2, 12);
+            _cardGapBox.Value = (double)(settings[CardGapKey] ?? 12.0);
 
             // --- 文字大小 ---
-            _subjectFontSizeBox = CreateNumberBoxWithoutHeader(10, 48, 1, 26);
-            _subjectFontSizeBox.Value = (double)(settings[SubjectFontSizeKey] ?? 26.0);
-            _contentFontSizeBox = CreateNumberBoxWithoutHeader(8, 36, 1, 20);
-            _contentFontSizeBox.Value = (double)(settings[ContentFontSizeKey] ?? 20.0);
+            _subjectFontSizeBox = CreateNumberBoxWithoutHeader(10, 48, 1, 18);
+            _subjectFontSizeBox.Value = (double)(settings[SubjectFontSizeKey] ?? 18.0);
+            _contentFontSizeBox = CreateNumberBoxWithoutHeader(8, 36, 1, 15);
+            _contentFontSizeBox.Value = (double)(settings[ContentFontSizeKey] ?? 15.0);
 
             // --- 服务器地址 ---
             _serverUrlBox = new TextBox

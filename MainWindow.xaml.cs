@@ -1044,11 +1044,11 @@ namespace CSD
                 // 从设置读取卡片大小参数
                 var settings = AppSettings.Values;
                 double minCardWidth = (double)(settings["Settings_MinCardWidth"] ?? 220.0);
-                double gap = (double)(settings["Settings_CardGap"] ?? 14.0);
-                double subjectFontSize = (double)(settings["Settings_SubjectFontSize"] ?? 26.0);
-                double contentFontSize = (double)(settings["Settings_ContentFontSize"] ?? 20.0);
+                double gap = (double)(settings["Settings_CardGap"] ?? 12.0);
+                double subjectFontSize = (double)(settings["Settings_SubjectFontSize"] ?? 18.0);
+                double contentFontSize = (double)(settings["Settings_ContentFontSize"] ?? 15.0);
 
-                // 按可用宽度与内容长度分行，保证同排等高且偏宽内容能换到下一行
+                // 智能自适应布局：卡片宽度按内容长度比例分配
                 double availableWidth = HomeworkContainer.ActualWidth;
                 if (availableWidth <= 0) availableWidth = 800;
 
@@ -1056,17 +1056,30 @@ namespace CSD
 
                 foreach (var rowItems in rows)
                 {
-                    var rowGrid = new Grid
+                    // 计算当前行的总权重（基于内容长度）
+                    var row = new Grid
                     {
                         ColumnSpacing = gap,
                         HorizontalAlignment = HorizontalAlignment.Stretch
                     };
 
+                    // 计算每个卡片的权重（内容长度）
+                    var weights = new List<double>();
+                    double totalWeight = 0;
+                    foreach (var item in rowItems)
+                    {
+                        double weight = EstimateCardWidth(item, minCardWidth, availableWidth, contentFontSize);
+                        weights.Add(weight);
+                        totalWeight += weight;
+                    }
+
+                    // 按比例分配列宽
                     for (int column = 0; column < rowItems.Count; column++)
                     {
-                        rowGrid.ColumnDefinitions.Add(new ColumnDefinition
+                        double proportion = weights[column] / totalWeight;
+                        row.ColumnDefinitions.Add(new ColumnDefinition
                         {
-                            Width = new GridLength(1, GridUnitType.Star)
+                            Width = new GridLength(proportion, GridUnitType.Star)
                         });
                     }
 
@@ -1074,10 +1087,10 @@ namespace CSD
                     {
                         var card = CreateCard(rowItems[column], subjectFontSize, contentFontSize);
                         Grid.SetColumn(card, column);
-                        rowGrid.Children.Add(card);
+                        row.Children.Add(card);
                     }
 
-                    HomeworkContainer.Children.Add(rowGrid);
+                    HomeworkContainer.Children.Add(row);
                 }
             }
             catch (JsonException)
@@ -1173,24 +1186,28 @@ namespace CSD
         {
             var border = new Border
             {
-                Padding = new Thickness(22),
+                Padding = new Thickness(16),
                 Background = (Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"],
-                CornerRadius = new CornerRadius(25),
+                CornerRadius = new CornerRadius(16),
                 Translation = new Vector3(0, 0, 16),
                 VerticalAlignment = VerticalAlignment.Stretch
             };
 
             border.Shadow = new ThemeShadow();
 
-            var stack = new StackPanel { Spacing = 10 };
+            var stack = new StackPanel { Spacing = 8 };
             stack.Children.Add(new TextBlock
             {
                 FontSize = subjectFontSize,
                 FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Text = item.Subject
+                Text = item.Subject,
+                TextWrapping = TextWrapping.Wrap
             });
+
+            // 添加自动编号的内容
+            var contentText = AddAutoNumbering(item.Content);
             stack.Children.Add(MarkdownTextRenderer.CreateRichTextBlock(
-                item.Content,
+                contentText,
                 contentFontSize,
                 (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]));
 
@@ -1211,6 +1228,35 @@ namespace CSD
             button.Click += CardButton_Click;
 
             return button;
+        }
+
+        /// <summary>
+        /// 为多行内容添加自动编号（1. 2. 3. ...）
+        /// 仅在内容完全没有编号格式时才添加，避免与已有编号冲突
+        /// </summary>
+        private static string AddAutoNumbering(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return content;
+
+            // 先检查是否至少有一行有编号（如果有则完全不处理，返回原内容）
+            var linesForCheck = content.Split('\n');
+            bool hasAnyNumbering = linesForCheck.Any(line => 
+                System.Text.RegularExpressions.Regex.IsMatch(line.Trim(), @"^\d+\.\s"));
+
+            if (hasAnyNumbering)
+                return content;
+
+            // 没有编号时，添加编号
+            var validLines = content.Split('\n')
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .ToList();
+
+            if (validLines.Count <= 1)
+                return content;
+
+            var numberedLines = validLines.Select((line, index) => $"{index + 1}. {line.Trim()}");
+            return string.Join("\n", numberedLines);
         }
 
         private async void CardButton_Click(object sender, RoutedEventArgs e)
