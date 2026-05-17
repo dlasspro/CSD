@@ -1,4 +1,4 @@
-﻿using Microsoft.UI;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -27,7 +27,7 @@ namespace CSD.Views
 
         public AboutWindow()
         {
-            Title = "关于 CSD";
+            Title = "关于 Classworks Desktop";
             SystemBackdrop = new MicaBackdrop();
 
             var root = new Grid
@@ -59,7 +59,7 @@ namespace CSD.Views
 
             heroStack.Children.Add(new TextBlock
             {
-                Text = "CSD",
+                Text = "Classworks Desktop",
                 FontSize = 32,
                 FontWeight = Microsoft.UI.Text.FontWeights.Bold,
                 HorizontalAlignment = HorizontalAlignment.Center
@@ -72,14 +72,6 @@ namespace CSD.Views
                 Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, -4, 0, 0)
-            });
-
-            heroStack.Children.Add(new TextBlock
-            {
-                Text = "Classworks Desktop",
-                FontSize = 15,
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-                HorizontalAlignment = HorizontalAlignment.Center
             });
 
             heroBorder.Child = heroStack;

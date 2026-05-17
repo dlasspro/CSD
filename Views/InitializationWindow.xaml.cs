@@ -931,7 +931,7 @@ namespace CSD.Views
                 AutoRegisterButton.Content = "正在注册...";
 
                 string uuid = Guid.NewGuid().ToString();
-                string deviceName = $"CSD-{Environment.MachineName}";
+                string deviceName = $"Classworks Desktop-{Environment.MachineName}";
                 string serverUrl = AppSettings.Values["Settings_ServerUrl"] as string ?? "https://kv-service.wuyuan.dev";
                 serverUrl = serverUrl.TrimEnd('/');
 
