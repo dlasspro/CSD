@@ -16,19 +16,13 @@
 	<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <Nullable>enable</Nullable>
     <!-- 版本号配置 -->
-<<<<<<< HEAD
     <Version>0.0.3</Version>
     <AssemblyVersion>0.0.3.0</AssemblyVersion>
     <FileVersion>0.0.3.0</FileVersion>
-=======
-    <Version>0.0.2</Version>
-    <AssemblyVersion>0.0.2.0</AssemblyVersion>
-    <FileVersion>0.0.2.0</FileVersion>
     <AssemblyTitle>Classworks Desktop</AssemblyTitle>
     <Description>Classworks Desktop Client</Description>
     <Company>dy.ci</Company>
     <Product>Classworks Desktop</Product>
->>>>>>> 0e12b23ae3f89d48465d7b1da19792f5134e0c18
   </PropertyGroup>
 
   <ItemGroup>
