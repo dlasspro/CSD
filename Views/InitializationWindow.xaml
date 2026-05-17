@@ -44,7 +44,7 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     FontSize="13"
                     FontWeight="SemiBold"
-                    Text="CSD" />
+                    Text="Classworks Desktop" />
                 <TextBlock
                     x:Name="TitleStatusText"
                     Margin="0,-1,0,0"

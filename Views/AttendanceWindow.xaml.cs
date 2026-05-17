@@ -56,6 +56,16 @@ namespace CSD.Views
             ExtendsContentIntoTitleBar = true;
             this.AppWindow.Resize(new SizeInt32(900, 600));
 
+            try
+            {
+                var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
+                if (System.IO.File.Exists(iconPath))
+                {
+                    AppWindow.SetIcon(iconPath);
+                }
+            }
+            catch { }
+
             _ = LoadAttendanceDataAsync();
         }
 
